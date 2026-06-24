@@ -53,20 +53,55 @@ cp .env.example .env
 # 编辑 .env，填入 MINIMAX_API_KEY 等
 ```
 
-### 3. 启动开发环境
+### 3. 用 Docker 启动数据库
+
+项目使用 PostgreSQL，推荐用 Docker 跑数据库，省去本地安装。
 
 ```bash
-# 方式一：Justfile
-just dev
+# 只启动数据库容器（postgres:16-alpine，端口 5432，库名 repurposer）
+docker compose up -d db
 
-# 方式二：shell 脚本
-./scripts/dev.sh
+# 常用操作
+docker compose ps          # 查看状态
+docker compose logs -f db  # 看日志
+docker compose stop db     # 停止
 ```
 
-访问：
-- 前端：http://localhost:3000
-- 后端：http://localhost:8000
-- API 文档：http://localhost:8000/docs
+- 默认连接串（已写入 `.env.example`）：
+  `postgresql+asyncpg://postgres:postgres@localhost:5432/repurposer`
+- 数据持久化在 Docker 卷 `postgres_data`，`docker compose stop` 不会丢数据。
+- 提示：`./scripts/dev.sh` 会在 5432 端口空闲时自动用 Docker 拉起一个 `repurposer-db` 容器；
+  如果你已经用上面的 `docker compose up -d db` 起好了，脚本会自动跳过，不会重复启动。
+
+> Docker 不可用时，脚本会打印警告并跳过，此时请自行保证 5432 端口有可连接的 PostgreSQL。
+
+### 4. 一键启动应用，然后访问 3000
+
+```bash
+# 方式一：shell 脚本（推荐）
+./scripts/dev.sh
+
+# 方式二：Justfile
+just dev
+```
+
+脚本会同时拉起 **后端（:8000）** 和 **前端（:3000）**，并在需要时自动启动数据库。
+启动完成后，浏览器打开 👉 **http://localhost:3000**
+
+| 服务 | 地址 |
+|------|------|
+| 前端（Web App） | http://localhost:3000 |
+| 后端（API） | http://localhost:8000 |
+| API 文档（Swagger） | http://localhost:8000/docs |
+
+### 5.（可选）全栈 Docker 一键运行
+
+无需本地装 Node / Python，直接用 Docker 跑 db + api + web：
+
+```bash
+docker compose up --build
+# 完成后同样访问 http://localhost:3000
+```
 
 ## 文档
 
