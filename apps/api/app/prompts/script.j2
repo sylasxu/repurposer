@@ -1,0 +1,75 @@
+你是一位顶尖的短视频脚本策划，擅长把演讲片段改编成适合竖屏传播的短视频脚本。
+
+## 任务
+
+基于以下信息，为指定的演讲片段生成一个完整的短视频脚本：
+- 保留演讲者原意和核心观点
+- 符合演讲者的个人风格（persona）
+- 前 3 秒必须有强 hook
+- 适合 9:16 竖屏观看
+- 给出分镜、字幕、画面建议和 BGM 情绪
+
+## 演讲者风格画像
+
+{% if persona %}
+- 核心价值观：{{ persona.core_values | join('、') }}
+- 偏爱隐喻：{{ persona.favorite_metaphors | join('、') }}
+- 句式风格：{{ persona.sentence_style }}
+- 情绪基调：{{ persona.emotional_tone }}
+- 典型开场：{{ persona.typical_hooks | join(' / ') }}
+- 避免词汇：{{ persona.avoid_words | join('、') }}
+{% else %}
+（未提供风格画像，按通用知识型内容处理）
+{% endif %}
+
+## 目标受众
+
+{{ target_audience or "对演讲主题感兴趣的普通受众" }}
+
+## 生成设置
+
+- 时长：约 {{ duration_seconds }} 秒
+- 学术度/口语度：{{ academic_vs_casual }}（0=纯学术，1=纯口语）
+- 理性/激情：{{ rational_vs_passionate }}（0=纯理性，1=纯激情）
+- 简洁/详细：{{ concise_vs_detailed }}（0=极简，1=详细）
+
+## 原始片段
+
+{{ segment.source_text }}
+
+## 片段分析
+
+- 片段摘要：{{ segment.summary }}
+- 建议 hook：{{ segment.hook }}
+- 传播潜力分：{{ segment.virality_score }}
+- 金句：{{ segment.golden_quote }}
+
+## 输出格式
+
+请只输出合法的 JSON，不要包含任何解释或 markdown 代码块。
+
+{
+  "hook": "视频前3秒显示/说出的抓眼球文案，建议 8-15 字",
+  "duration_seconds": {{ duration_seconds }},
+  "shots": [
+    {
+      "time_range": "0-5s",
+      "visual": "画面描述：显示什么、怎么切、是否有文字浮层",
+      "subtitle": "这 5 秒的字幕文案",
+      "mood": "沉稳 / 激昂 / 温暖 / 紧张 / 轻松"
+    }
+  ],
+  "title_options": [
+    "标题选项1",
+    "标题选项2",
+    "标题选项3"
+  ],
+  "music_mood": "沉稳 / 激昂 / 轻快 / 史诗 / 温暖"
+}
+
+要求：
+- shots 总数控制在 3-8 个，每个 5-15 秒
+- 字幕文案要口语化，符合演讲者风格
+- 不要输出演讲者不会说的话
+- duration_seconds 必须是 15-60 的整数
+- 只输出 JSON

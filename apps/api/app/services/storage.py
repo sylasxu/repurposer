@@ -19,6 +19,22 @@ def _sanitize_filename(filename: str) -> str:
     return name or "unnamed"
 
 
+def _unique_path(directory: Path, filename: str) -> Path:
+    """Return a unique path inside directory, appending a counter if needed."""
+    base = directory / _sanitize_filename(filename)
+    if not base.exists():
+        return base
+
+    stem = base.stem
+    suffix = base.suffix
+    counter = 1
+    while True:
+        candidate = directory / f"{stem} ({counter}){suffix}"
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
 def _relative_path(path: Path) -> str:
     """Return path relative to upload_dir as a POSIX string."""
     try:
@@ -41,14 +57,14 @@ def get_upload_path(project_id: UUID, filename: str) -> Path:
     """Get upload file path for a project."""
     directory = get_project_upload_dir(project_id)
     directory.mkdir(parents=True, exist_ok=True)
-    return directory / _sanitize_filename(filename)
+    return _unique_path(directory, filename)
 
 
 def get_speaker_upload_path(speaker_id: UUID, filename: str) -> Path:
     """Get upload file path for a speaker."""
     directory = get_speaker_upload_dir(speaker_id)
     directory.mkdir(parents=True, exist_ok=True)
-    return directory / _sanitize_filename(filename)
+    return _unique_path(directory, filename)
 
 
 def get_output_path(project_id: UUID, filename: str) -> Path:

@@ -1,0 +1,89 @@
+你是一位短视频脚本修订专家。用户对一个已生成的脚本提出了反馈，请你根据反馈修订脚本。
+
+## 原始片段
+
+{{ segment.source_text }}
+
+## 原始脚本
+
+- Hook：{{ script.hook }}
+- 分镜：
+{% for shot in script.shots %}
+  {{ loop.index }}. [{{ shot.time_range }}] {{ shot.subtitle }}
+     画面：{{ shot.visual }}
+     情绪：{{ shot.mood }}
+{% endfor %}
+- 标题选项：{{ script.title_options | join(' / ') }}
+- BGM 情绪：{{ script.music_mood }}
+
+## 演讲者风格画像
+
+{% if persona %}
+- 核心价值观：{{ persona.core_values | join('、') }}
+- 偏爱隐喻：{{ persona.favorite_metaphors | join('、') }}
+- 句式风格：{{ persona.sentence_style }}
+- 情绪基调：{{ persona.emotional_tone }}
+- 典型开场：{{ persona.typical_hooks | join(' / ') }}
+- 避免词汇：{{ persona.avoid_words | join('、') }}
+{% else %}
+（未提供风格画像）
+{% endif %}
+
+## 用户反馈
+
+- 反馈范围：{{ feedback.scope }}
+- 反馈原因：{{ feedback.reason }}
+{% if feedback.detail %}
+- 详细说明：{{ feedback.detail }}
+{% endif %}
+
+## 修订要求
+
+{% if feedback.scope == 'hook' %}
+重点修改 hook（前 3 秒），其他部分尽量保留。
+{% elif feedback.scope == 'full_script' %}
+重新组织整个脚本，但保留核心观点和关键信息。
+{% elif feedback.scope == 'tone' %}
+调整语气，使其更贴合演讲者风格画像。
+{% elif feedback.scope == 'translation' %}
+保持原意，但调整表达方式，使其更自然。
+{% endif %}
+
+原因对应：
+{% if feedback.reason == 'hook_not_catchy' %}
+- hook 必须更有冲击力，可以用反问、冲突、数字或反直觉观点
+{% elif feedback.reason == 'not_like_speaker' %}
+- 必须使用演讲者常用的句式和隐喻，避免陌生表达
+{% elif feedback.reason == 'too_complex' %}
+- 简化语言，减少术语，增加类比
+{% elif feedback.reason == 'too_simple' %}
+- 增加深度，保留专业术语，提升信息密度
+{% elif feedback.reason == 'factually_inaccurate' %}
+- 严格基于原始片段事实，不添加原文没有的信息
+{% elif feedback.reason == 'different_expression' %}
+- 调整表达方式，但保持原意
+{% endif %}
+
+## 输出格式
+
+请只输出合法的 JSON，不要任何解释：
+
+{
+  "hook": "修订后的前3秒文案",
+  "duration_seconds": {{ script.duration_seconds }},
+  "shots": [
+    {
+      "time_range": "0-5s",
+      "visual": "画面描述",
+      "subtitle": "字幕文案",
+      "mood": "情绪"
+    }
+  ],
+  "title_options": ["标题1", "标题2", "标题3"],
+  "music_mood": "BGM情绪",
+  "virality_score": 85
+}
+
+- shots 总数 3-8 个
+- duration_seconds 保持 {{ script.duration_seconds }} 秒左右
+- 只输出 JSON

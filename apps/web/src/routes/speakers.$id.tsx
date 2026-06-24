@@ -1,8 +1,25 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { ArrowLeft, Upload, Wand2, Save, Trash2, FileText } from 'lucide-react'
+import { Link, createFileRoute } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+import { ArrowLeft, Wand2, Save, Trash2, FileText, Sparkles } from "lucide-react"
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
 interface Speaker {
   id: string
@@ -19,7 +36,7 @@ interface SpeakerPersona {
   core_values: string[]
   favorite_metaphors: string[]
   sentence_style: string
-  emotional_tone: '理性' | '激情' | '温和' | '犀利' | '幽默'
+  emotional_tone: "理性" | "激情" | "温和" | "犀利" | "幽默"
   typical_hooks: string[]
   avoid_words: string[]
 }
@@ -33,13 +50,13 @@ interface Asset {
   created_at: string
 }
 
-export const Route = createFileRoute('/speakers/$id')({
+export const Route = createFileRoute("/speakers/$id")({
   component: SpeakerDetailPage,
 })
 
 function SpeakerDetailPage() {
   const { id } = Route.useParams()
-  const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const [speaker, setSpeaker] = useState<Speaker | null>(null)
   const [materials, setMaterials] = useState<Asset[]>([])
@@ -47,12 +64,11 @@ function SpeakerDetailPage() {
   const [generating, setGenerating] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+  const [message, setMessage] = useState("")
+  const [error, setError] = useState("")
 
-  // Editable fields
-  const [name, setName] = useState('')
-  const [title, setTitle] = useState('')
+  const [name, setName] = useState("")
+  const [title, setTitle] = useState("")
   const [persona, setPersona] = useState<SpeakerPersona | null>(null)
 
   const fetchData = async () => {
@@ -62,16 +78,16 @@ function SpeakerDetailPage() {
         fetch(`${API_URL}/api/v1/speakers/${id}`),
         fetch(`${API_URL}/api/v1/speakers/${id}/assets`),
       ])
-      if (!speakerRes.ok) throw new Error('Speaker not found')
+      if (!speakerRes.ok) throw new Error("Speaker not found")
       const speakerData = await speakerRes.json()
       const materialsData = await materialsRes.json()
       setSpeaker(speakerData)
       setMaterials(materialsData)
       setName(speakerData.name)
-      setTitle(speakerData.title || '')
+      setTitle(speakerData.title || "")
       setPersona(speakerData.persona)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load speaker')
+      setError(err instanceof Error ? err.message : "Failed to load speaker")
     } finally {
       setLoading(false)
     }
@@ -84,19 +100,19 @@ function SpeakerDetailPage() {
   const handleUpdateSpeaker = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    setError('')
-    setMessage('')
+    setError("")
+    setMessage("")
     try {
       const res = await fetch(`${API_URL}/api/v1/speakers/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, title, persona }),
       })
-      if (!res.ok) throw new Error('Failed to update speaker')
-      setMessage('Speaker updated')
+      if (!res.ok) throw new Error("Failed to update speaker")
+      setMessage(t("speakerDetail.msgUpdated"))
       fetchData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Update failed')
+      setError(err instanceof Error ? err.message : "Update failed")
     } finally {
       setSaving(false)
     }
@@ -104,18 +120,18 @@ function SpeakerDetailPage() {
 
   const handleGeneratePersona = async () => {
     setGenerating(true)
-    setError('')
-    setMessage('')
+    setError("")
+    setMessage("")
     try {
       const res = await fetch(`${API_URL}/api/v1/speakers/${id}/persona/generate`, {
-        method: 'POST',
+        method: "POST",
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.detail || 'Generation failed')
+      if (!res.ok) throw new Error(data.detail || "Generation failed")
       setPersona(data)
-      setMessage('Persona generated successfully')
+      setMessage(t("speakerDetail.msgGenerated"))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed')
+      setError(err instanceof Error ? err.message : "Generation failed")
     } finally {
       setGenerating(false)
     }
@@ -125,37 +141,37 @@ function SpeakerDetailPage() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
-    setError('')
-    setMessage('')
+    setError("")
+    setMessage("")
     try {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append("file", file)
       const res = await fetch(`${API_URL}/api/v1/speakers/${id}/assets`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       })
-      if (!res.ok) throw new Error('Upload failed')
-      setMessage('Material uploaded')
+      if (!res.ok) throw new Error("Upload failed")
+      setMessage(t("speakerDetail.msgUploaded"))
       fetchData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed')
+      setError(err instanceof Error ? err.message : "Upload failed")
     } finally {
       setUploading(false)
-      e.target.value = ''
+      e.target.value = ""
     }
   }
 
   const handleDeleteMaterial = async (assetId: string) => {
-    if (!confirm('Delete this material?')) return
+    if (!confirm(t("speakerDetail.deleteConfirm"))) return
     try {
       const res = await fetch(`${API_URL}/api/v1/speakers/${id}/assets/${assetId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       })
-      if (!res.ok) throw new Error('Delete failed')
-      setMessage('Material deleted')
+      if (!res.ok) throw new Error("Delete failed")
+      setMessage(t("speakerDetail.msgDeleted"))
       fetchData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed')
+      setError(err instanceof Error ? err.message : "Delete failed")
     }
   }
 
@@ -167,214 +183,209 @@ function SpeakerDetailPage() {
   }
 
   const updateListField = (field: keyof SpeakerPersona, value: string) => {
-    updatePersonaField(field, value.split('\n').filter((s) => s.trim()))
+    updatePersonaField(field, value.split("\n").filter((s) => s.trim()))
   }
 
   if (loading && !speaker) {
-    return <div className="p-6">Loading...</div>
+    return (
+      <div className="flex min-h-screen items-center justify-center p-8">
+        <div className="text-muted-foreground">{t("common.loading")}</div>
+      </div>
+    )
   }
 
   if (!speaker) {
-    return <div className="p-6 text-red-600">{error || 'Speaker not found'}</div>
+    return (
+      <div className="flex min-h-screen items-center justify-center p-8">
+        <Alert variant="destructive">
+          <AlertDescription>{error || t("speakerDetail.notFound")}</AlertDescription>
+        </Alert>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          to="/speakers"
-          className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </Link>
-        <h1 className="text-2xl font-bold">{speaker.name}</h1>
+    <div className="flex min-h-screen flex-col p-8">
+      <div className="mb-6 flex items-center gap-4">
+        <Button variant="ghost" size="icon" render={<Link to="/speakers" />}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{speaker.name}</h1>
+          {speaker.title && <p className="text-muted-foreground">{speaker.title}</p>}
+        </div>
       </div>
 
       {(message || error) && (
-        <div
-          className={`p-4 rounded-lg ${
-            error ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
-          }`}
-        >
-          {error || message}
-        </div>
+        <Alert variant={error ? "destructive" : "default"} className="mb-6">
+          <AlertDescription>{error || message}</AlertDescription>
+        </Alert>
       )}
 
-      <form onSubmit={handleUpdateSpeaker} className="bg-white p-6 rounded-lg shadow-sm border space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-            />
-          </div>
-        </div>
+      <Tabs defaultValue="persona" className="flex-1">
+        <TabsList className="mb-6">
+          <TabsTrigger value="persona">{t("speakerDetail.tabPersona")}</TabsTrigger>
+          <TabsTrigger value="materials">
+            {t("speakerDetail.tabMaterials", { count: materials.length })}
+          </TabsTrigger>
+        </TabsList>
 
-        <div className="border-t pt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Style Persona</h2>
-            <button
-              type="button"
-              onClick={handleGeneratePersona}
-              disabled={generating || materials.length === 0}
-              className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:opacity-50"
-            >
-              <Wand2 className="w-4 h-4" />
-              {generating ? 'Generating...' : 'Generate from Materials'}
-            </button>
-          </div>
-
-          {persona ? (
-            <div className="space-y-4">
+        <TabsContent value="persona" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Emotional Tone</label>
-                <select
-                  value={persona.emotional_tone}
-                  onChange={(e) => updatePersonaField('emotional_tone', e.target.value as SpeakerPersona['emotional_tone'])}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                >
-                  <option value="理性">理性</option>
-                  <option value="激情">激情</option>
-                  <option value="温和">温和</option>
-                  <option value="犀利">犀利</option>
-                  <option value="幽默">幽默</option>
-                </select>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  {t("speakerDetail.personaTitle")}
+                </CardTitle>
+                <CardDescription>{t("speakerDetail.personaDesc")}</CardDescription>
               </div>
+              <Button
+                onClick={handleGeneratePersona}
+                disabled={generating || materials.length === 0}
+              >
+                <Wand2 className="mr-2 h-4 w-4" />
+                {generating ? t("speakerDetail.generating") : t("speakerDetail.generate")}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {persona ? (
+                <form onSubmit={handleUpdateSpeaker} className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="tone">{t("speakerDetail.tone")}</Label>
+                      <Select
+                        value={persona.emotional_tone}
+                        onValueChange={(v) =>
+                          updatePersonaField(
+                            "emotional_tone",
+                            v as SpeakerPersona["emotional_tone"]
+                          )
+                        }
+                      >
+                        <SelectTrigger id="tone">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(["理性", "激情", "温和", "犀利", "幽默"] as const).map((tName) => (
+                            <SelectItem key={tName} value={tName}>
+                              {t(`speakerDetail.tones.${tName}`)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Sentence Style</label>
-                <input
-                  type="text"
-                  value={persona.sentence_style}
-                  onChange={(e) => updatePersonaField('sentence_style', e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Core Values (one per line)</label>
-                <textarea
-                  value={persona.core_values.join('\n')}
-                  onChange={(e) => updateListField('core_values', e.target.value)}
-                  rows={4}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Favorite Metaphors (one per line)</label>
-                <textarea
-                  value={persona.favorite_metaphors.join('\n')}
-                  onChange={(e) => updateListField('favorite_metaphors', e.target.value)}
-                  rows={3}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Typical Hooks (one per line)</label>
-                <textarea
-                  value={persona.typical_hooks.join('\n')}
-                  onChange={(e) => updateListField('typical_hooks', e.target.value)}
-                  rows={4}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Avoid Words (one per line)</label>
-                <textarea
-                  value={persona.avoid_words.join('\n')}
-                  onChange={(e) => updateListField('avoid_words', e.target.value)}
-                  rows={3}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="text-gray-500 bg-gray-50 p-6 rounded-lg text-center">
-              No persona yet. Upload materials and click Generate.
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
-
-      <div className="bg-white p-6 rounded-lg shadow-sm border space-y-4">
-        <h2 className="text-lg font-semibold">Past Materials</h2>
-
-        <div className="flex items-center gap-4">
-          <label className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md cursor-pointer transition-colors">
-            <Upload className="w-4 h-4" />
-            {uploading ? 'Uploading...' : 'Upload Material'}
-            <input
-              type="file"
-              onChange={handleFileUpload}
-              disabled={uploading}
-              accept=".txt,.md,.pdf,.docx,.doc"
-              className="hidden"
-            />
-          </label>
-          <span className="text-sm text-gray-500">Supports .txt, .md, .pdf</span>
-        </div>
-
-        {materials.length === 0 ? (
-          <div className="text-gray-500 text-center py-8">No materials uploaded yet.</div>
-        ) : (
-          <div className="divide-y">
-            {materials.map((asset) => (
-              <div key={asset.id} className="py-4 flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3 min-w-0">
-                  <FileText className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">
-                      {asset.file_url?.split('/').pop() || 'Untitled'}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {asset.extracted_text
-                        ? `${asset.extracted_text.length.toLocaleString()} chars extracted`
-                        : 'No text extracted'}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Uploaded {new Date(asset.created_at).toLocaleString()}
-                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="sentence_style">{t("speakerDetail.sentenceStyle")}</Label>
+                      <Input
+                        id="sentence_style"
+                        value={persona.sentence_style}
+                        onChange={(e) => updatePersonaField("sentence_style", e.target.value)}
+                      />
+                    </div>
                   </div>
+
+                  <Separator />
+
+                  {([
+                    { key: "core_values", rows: 4 },
+                    { key: "favorite_metaphors", rows: 3 },
+                    { key: "typical_hooks", rows: 4 },
+                    { key: "avoid_words", rows: 3 },
+                  ] as const).map((item) => {
+                    const label = t(`speakerDetail.fields.${item.key}` as const)
+                    return (
+                      <div key={item.key} className="space-y-2">
+                        <Label>{label}</Label>
+                        <Textarea
+                          value={(persona[item.key as keyof SpeakerPersona] as string[]).join("\n")}
+                          onChange={(e) => updateListField(item.key as keyof SpeakerPersona, e.target.value)}
+                          rows={item.rows}
+                          placeholder={t("speakerDetail.fieldPlaceholder", { label })}
+                        />
+                      </div>
+                    )
+                  })}
+
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={saving}>
+                      <Save className="mr-2 h-4 w-4" />
+                      {saving ? t("common.saving") : t("speakerDetail.saveChanges")}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+                  <Sparkles className="mb-4 h-8 w-8 text-muted-foreground" />
+                  <p className="text-muted-foreground">{t("speakerDetail.emptyPersona")}</p>
                 </div>
-                <button
-                  onClick={() => handleDeleteMaterial(asset.id)}
-                  className="text-red-600 hover:text-red-800 p-1"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="materials" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>{t("speakerDetail.pastMaterials")}</CardTitle>
+                <CardDescription>{t("speakerDetail.pastMaterialsDesc")}</CardDescription>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  accept=".txt,.md,.pdf"
+                  className="w-auto"
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {materials.length === 0 ? (
+                <div className="rounded-lg border border-dashed py-12 text-center">
+                  <FileText className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
+                  <p className="text-muted-foreground">{t("speakerDetail.noMaterials")}</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {materials.map((asset) => (
+                    <div
+                      key={asset.id}
+                      className="flex items-start justify-between rounded-lg border p-4"
+                    >
+                      <div className="flex items-start gap-3 min-w-0">
+                        <FileText className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">
+                            {asset.file_url?.split("/").pop() || t("common.untitled")}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {asset.extracted_text
+                              ? t("speakerDetail.charsExtracted", { count: asset.extracted_text.length })
+                              : t("speakerDetail.noText")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("speakerDetail.uploadedAt", { date: new Date(asset.created_at).toLocaleString() })}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteMaterial(asset.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

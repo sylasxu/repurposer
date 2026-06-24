@@ -215,3 +215,76 @@ repurposer/
 | 是否支持 URL 输入 | 本期不做 | 产品 |
 | 首期支持语言 | 中英双语 | 产品 |
 | 付费模式 | 本期不设计 | 左总 |
+
+## ADR-013：国际化、主题切换与欧洲市场定位
+
+**状态**：已决策
+
+**背景**：Repurposer 面向欧洲知识型演讲市场，同时需要支持明暗主题切换和欧洲机构的合规诉求。
+
+**决策**：
+1. 前端使用 `i18next` + `react-i18next` 实现国际化。
+2. **默认语言为英文**；用户选择写入 `repurposer-lang` cookie，刷新后由客户端恢复。
+3. **默认主题为暗色**；用户手动切换后写入 `localStorage`。`system` 偏好也按暗色处理。
+4. 主题切换使用 View Transition API，从点击位置做圆形扩散揭开动画。
+5. 所有图标统一使用 `lucide-react`。
+6. **产品定位从“viral 短视频”转向“知识资产化”**：核心输出是 LinkedIn 长帖、金句卡、多语言摘要、Newsletter 等，目标用户为学术/企业峰会演讲者与研究机构。
+7. **多语言输出是欧洲市场入场门票**：除界面语言外，内容生成需覆盖 FR/DE/ES/IT 等欧洲主流语言。
+8. **GDPR / EU 数据驻留作为销售卖点**：通过 Cast AI Kimchi 的 M3 EU 部署能力，提供可选的 EU 数据处理，满足欧洲机构采购门槛。
+
+**原因**：
+- `i18next` 成熟、类型可约束，适合本项目规模。
+- SSR 场景下，首屏固定英文 + 客户端恢复 cookie 可以避免 hydration 不匹配。
+- `localStorage` + anti-FOUC inline script 能避免主题闪烁。
+- View Transition API 在 Chromium/Safari 提供原生流畅动画，Firefox 自动降级。
+- 统一图标库避免风格混乱和手动维护 SVG。
+- 欧洲知识型演讲市场是 OpusClip/Descript 覆盖不足的空白；LinkedIn 是 B2B 知识传播核心阵地；多语言和 GDPR 合规是硬性门槛。
+- Agent 驱动的 Analyzer → Script → Review → Reviser → HITL 闭环满足欧洲用户对内容质量和可控性的高要求。
+
+**约束与注意事项**：
+- shadcn 组件基于 base-ui，触发器使用 `render` prop 而非 `asChild`。
+- 新增用户文案必须同时更新 `zh.ts` 和 `en.ts`，保持键结构一致。
+- 浏览器 API（`localStorage`、`matchMedia`、`document.startViewTransition`）必须放在客户端代码路径中。
+- 前端文案、示例、工具网格避免使用“抖音/TikTok/爆款/viral”等面向 C 端娱乐短视频的描述。
+
+**相关文件**：
+- `apps/web/src/lib/i18n/`
+- `apps/web/src/lib/theme/ThemeProvider.tsx`
+- `apps/web/src/components/language-switcher.tsx`
+- `apps/web/src/components/theme-toggle.tsx`
+- `apps/web/src/routes/__root.tsx`
+- `apps/web/src/routes/index.tsx`
+- `CLAUDE.md`
+- `.claude/projects/-Users-sylas-repurposer/memory/europe-strategy-positioning.md`
+
+## ADR-014：Sidebar 参考 OpusClip 布局与 Brand Template 页面
+
+**状态**：已决策
+
+**背景**：随着导航项增加（Home、Projects、Speakers、Library、Brand template），首页顶部 bar 承载过多全局操作；同时用户希望复用 OpusClip 的 sidebar 交互与 Brand template 配置页面。
+
+**决策**：
+1. 采用左侧可折叠 icon sidebar（`shadcn/ui Sidebar collapsible="icon"`），参考 OpusClip 的隐藏/展开交互。
+2. Sidebar 顶部放置 workspace logo、折叠按钮和用户头像下拉菜单；下拉菜单已简化为 Profile / Settings / Logout，去除 OpusClip 中过多的业务项。
+3. Sidebar 中间按 `Create`（Home、Projects、Speakers）和 `Post`（Library、Brand template）分组导航。
+4. 新增 `/brand-template` 页面：左侧设置面板（字体、主色、强调色、Logo、默认 CTA、语言调性），右侧实时预览 quote card 与 LinkedIn post 样例。
+5. 新增 i18n key：`nav.create`、`nav.post`、`nav.brandTemplate`、`brandTemplate.*`、`common.profile/settings/logout/helpCenter/inviteMembers/freePlan/new`。
+
+**原因**：
+- 把全局导航从首页内容区抽离，首页能更聚焦在 prompt 输入和知识资产工具网格。
+- Brand template 是知识资产化 SaaS 的核心配置入口，方便用户统一控制输出风格。
+- OpusClip 的 sidebar 模式在视频/内容创作工具中已被验证，用户学习成本低。
+
+**约束与注意事项**：
+- 继续使用 base-ui 的 `render` prop，不用 `asChild`。
+- 新增 sidebar 入口必须同步更新 `zh.ts`/`en.ts` 的 `nav.*` key。
+- Brand template 当前为前端 mock 预览，后续需对接后端 `BrandTemplate` 配置表。
+
+**相关文件**：
+- `apps/web/src/components/app-sidebar.tsx`
+- `apps/web/src/routes/brand-template.tsx`
+- `apps/web/src/routes/index.tsx`
+- `apps/web/src/lib/i18n/locales/zh.ts`
+- `apps/web/src/lib/i18n/locales/en.ts`
+- `CLAUDE.md`
+- `.claude/projects/-Users-sylas-repurposer/memory/repurposer-sidebar-opusclip-reference.md`

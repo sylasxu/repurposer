@@ -177,6 +177,34 @@ class ClipScript(BaseModel):
     virality_score: int | None = Field(default=None, ge=1, le=100)
 
 
+class Segment(BaseModel):
+    """A high-potential segment extracted from project materials."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(description="Stable identifier for this segment")
+    source_text: str = Field(description="Original text of the segment")
+    start_marker: str = Field(description="Approximate start location in source")
+    end_marker: str = Field(description="Approximate end location in source")
+    summary: str = ""
+    hook: str = ""
+    virality_score: int = Field(default=50, ge=1, le=100)
+    golden_quote: str = ""
+    duration_seconds: int = Field(default=30, ge=15, le=120)
+
+
+class ContentAnalysis(BaseModel):
+    """Analysis result for project materials."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    overall_summary: str = ""
+    core_arguments: list[str] = Field(default_factory=list)
+    themes: list[str] = Field(default_factory=list)
+    target_audience: str = ""
+    segments: list[Segment] = Field(default_factory=list)
+
+
 class LinkedInPost(BaseModel):
     """Generated LinkedIn post."""
 
@@ -195,6 +223,14 @@ class QuoteCard(BaseModel):
     attribution: str
 
 
+class QuoteCardsResponse(BaseModel):
+    """Multiple quote cards response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    quotes: list[QuoteCard] = Field(default_factory=list)
+
+
 class DerivativeType(StrEnum):
     """Derivative content types."""
 
@@ -202,6 +238,26 @@ class DerivativeType(StrEnum):
     QUOTE_CARD = "quote_card"
     CAROUSEL = "carousel"
     MULTILINGUAL_SCRIPT = "multilingual_script"
+
+
+class ClipResponse(BaseModel):
+    """Generated clip response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    project_id: UUID
+    hook: str
+    script: ClipScript
+    title_options: list[str]
+    music_mood: str
+    status: str
+    video_url: str | None = None
+    duration: int
+    language: str
+    source_segment: Segment | None = None
+    created_at: datetime
+    updated_at: datetime | None = None
 
 
 class GenerateRequest(BaseModel):
@@ -212,6 +268,7 @@ class GenerateRequest(BaseModel):
         default_factory=lambda: ["clips", "linkedin", "quote_cards"]
     )
     tone_settings: ToneSettings | None = None
+    target_language: str = Field(default="en", description="Target language for generated content (e.g. en, zh, fr, de, es, it)")
 
 
 class FeedbackScope(StrEnum):
@@ -241,6 +298,20 @@ class FeedbackRequest(BaseModel):
     scope: FeedbackScope
     reason: FeedbackReason
     detail: str | None = None
+
+
+class ReviewResult(BaseModel):
+    """Review result for a generated clip script."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    persona_match_score: int = Field(default=70, ge=1, le=100)
+    hook_score: int = Field(default=70, ge=1, le=100)
+    clarity_score: int = Field(default=70, ge=1, le=100)
+    viral_potential_score: int = Field(default=70, ge=1, le=100)
+    issues: list[str] = Field(default_factory=list)
+    suggestions: list[str] = Field(default_factory=list)
+    overall_verdict: Literal["pass", "revise", "reject"] = "pass"
 
 
 class WorkflowRunResponse(BaseModel):

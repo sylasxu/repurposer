@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.models.database import init_db
-from app.routers import assets, projects, speaker_assets, speakers
+from app.routers import assets, clips, projects, speaker_assets, speakers
 
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ app.include_router(speakers, prefix="/api/v1/speakers", tags=["speakers"])
 app.include_router(projects, prefix="/api/v1/projects", tags=["projects"])
 app.include_router(assets, prefix="/api/v1/projects", tags=["assets"])
 app.include_router(speaker_assets, prefix="/api/v1/speakers", tags=["speaker-assets"])
+app.include_router(clips, prefix="/api/v1/clips", tags=["clips"])
 
 
 @app.get("/health")

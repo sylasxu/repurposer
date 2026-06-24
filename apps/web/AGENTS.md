@@ -1,5 +1,9 @@
 <!-- intent-skills:start -->
 # TanStack Intent - before editing files, run the matching guidance command.
+
+> **Project conventions for this web app are documented in `/CLAUDE.md` at the repo root.**
+> Key rules: shadcn components use `render` (not `asChild`), icons come from `lucide-react`, all user-facing text goes through `useTranslation`, theme code must stay SSR-safe, and product copy follows the Europe knowledge-assetization positioning (LinkedIn/multi-language/GDPR).
+
 tanstackIntent:
   - id: "@tanstack/devtools#devtools-app-setup"
     run: "pnpm dlx @tanstack/intent@latest load @tanstack/devtools#devtools-app-setup"

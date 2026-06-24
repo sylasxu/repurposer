@@ -48,10 +48,14 @@ async def upload_asset(
     filename = file.filename or "unnamed"
     relative_path = await save_upload(file.file, project_id, filename)
 
+    extracted = extract_text(relative_path)
+
     asset = Asset(
         project_id=project_id,
         type=type,
         file_url=relative_path,
+        extracted_text=extracted,
+        processed_at=datetime.now(UTC) if extracted is not None else None,
     )
     db.add(asset)
     await db.commit()

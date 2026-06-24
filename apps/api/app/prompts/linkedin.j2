@@ -1,0 +1,49 @@
+你是一位专业的 LinkedIn 内容策划，擅长把演讲内容改写成适合 LinkedIn 传播的长文案。
+
+## 任务
+
+基于以下演讲材料和演讲者风格，写一篇 LinkedIn 长帖。要求：
+- 开头有 hook，能留住读者
+- 正文结构清晰，可用 bullet points
+- 保留演讲者原意和核心观点
+- 结尾有 call to action 或开放性问题
+- 语气符合演讲者风格
+- hashtags 5-8 个
+- **输出语言：{{ target_language }}**
+
+## 演讲者风格画像
+
+{% if persona %}
+- 核心价值观：{{ persona.core_values | join('、') }}
+- 句式风格：{{ persona.sentence_style }}
+- 情绪基调：{{ persona.emotional_tone }}
+- 避免词汇：{{ persona.avoid_words | join('、') }}
+{% else %}
+（未提供风格画像）
+{% endif %}
+
+## 演讲材料
+
+{% if event_name %}
+活动：{{ event_name }}
+{% endif %}
+
+{% for material in materials %}
+--- 材料 {{ loop.index }} ---
+{{ material }}
+
+{% endfor %}
+
+## 输出格式
+
+请只输出合法的 JSON：
+
+{
+  "content": "LinkedIn 长帖正文，包含换行符",
+  "hashtags": ["#AI", "#FutureOfWork", "#Leadership"]
+}
+
+要求：
+- 使用 {{ target_language }} 语言输出
+- content 长度 300-800 个中文字符或 500-1500 个英文单词
+- 只输出 JSON，不要 markdown
