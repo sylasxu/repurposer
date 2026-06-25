@@ -79,6 +79,22 @@ const variantOptions = [1, 3, 5] as const
 type Tone = (typeof tones)[number]
 type Length = (typeof lengths)[number]
 
+// Maps the composer's tone/length pills onto the backend ToneSettings schema.
+const TONE_MAP: Record<
+  Tone,
+  {
+    academic_vs_casual: number
+    rational_vs_passionate: number
+    audience: "academic" | "industry" | "general" | "investor"
+  }
+> = {
+  professional: { academic_vs_casual: 0.35, rational_vs_passionate: 0.45, audience: "industry" },
+  thoughtLeadership: { academic_vs_casual: 0.45, rational_vs_passionate: 0.4, audience: "industry" },
+  conversational: { academic_vs_casual: 0.7, rational_vs_passionate: 0.6, audience: "general" },
+  academic: { academic_vs_casual: 0.15, rational_vs_passionate: 0.3, audience: "academic" },
+}
+const LENGTH_CONCISE: Record<Length, number> = { short: 0.2, medium: 0.5, long: 0.8 }
+
 export const Route = createFileRoute("/")({
   component: Home,
 })
@@ -95,6 +111,7 @@ function Home() {
   const [variants, setVariants] = useState<number>(3)
   const [fileName, setFileName] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [error, setError] = useState("")
   const [autoSave, setAutoSave] = useState(true)
   const [autoImport, setAutoImport] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -118,21 +135,66 @@ function Home() {
   }, [prompt])
 
   const handleGenerate = async () => {
-    if (!prompt.trim() || !speakerId) return
+    const file = fileInputRef.current?.files?.[0]
+    if ((!file && !prompt.trim()) || !speakerId) return
     setIsGenerating(true)
+    setError("")
     try {
-      const res = await fetch(`${API_URL}/api/v1/projects`, {
+      // 1. Create the project.
+      const projectRes = await fetch(`${API_URL}/api/v1/projects`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: prompt.slice(0, 60),
+          title: file?.name || prompt.slice(0, 60) || "Untitled",
           event_name: "",
           language: "en",
           speaker_id: speakerId,
         }),
       })
-      const project = await res.json()
+      if (!projectRes.ok) throw new Error("Failed to create project")
+      const project = await projectRes.json()
+
+      // 2. Upload the source material: the chosen transcript file, or the
+      //    typed prompt turned into a transcript so generation has something
+      //    to analyze.
+      const form = new FormData()
+      form.append("type", "transcript")
+      form.append(
+        "file",
+        file ?? new File([prompt], "prompt.txt", { type: "text/plain" })
+      )
+      const assetRes = await fetch(
+        `${API_URL}/api/v1/projects/${project.id}/assets`,
+        { method: "POST", body: form }
+      )
+      if (!assetRes.ok) throw new Error("Failed to upload material")
+
+      // 3. Kick off generation with the composer's tone/length/variants.
+      const generateRes = await fetch(
+        `${API_URL}/api/v1/projects/${project.id}/generate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clip_count: variants,
+            outputs: ["clips", "linkedin", "quote_cards"],
+            tone_settings: {
+              ...TONE_MAP[tone],
+              concise_vs_detailed: LENGTH_CONCISE[length],
+            },
+            target_language: "en",
+          }),
+        }
+      )
+      if (!generateRes.ok) {
+        const detail = await generateRes.json().catch(() => null)
+        throw new Error(detail?.detail || "Generation failed")
+      }
+
+      // 4. Open the project to view results.
       navigate({ to: "/projects/$id", params: { id: project.id } })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong")
     } finally {
       setIsGenerating(false)
     }
@@ -165,7 +227,7 @@ function Home() {
 
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] text-white">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] text-destructive-foreground">
               24
             </span>
           </Button>
@@ -375,7 +437,7 @@ function Home() {
                   <Button
                     className="h-9 w-9 rounded-full"
                     size="icon"
-                    disabled={!prompt.trim() || !speakerId || isGenerating}
+                    disabled={(!prompt.trim() && !fileName) || !speakerId || isGenerating}
                     onClick={handleGenerate}
                   >
                     {isGenerating ? (
@@ -388,6 +450,15 @@ function Home() {
               </div>
             </CardContent>
           </Card>
+
+          {error && (
+            <p className="mt-3 text-sm text-destructive">{error}</p>
+          )}
+          {isGenerating && !error && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t("home.generating")}
+            </p>
+          )}
         </div>
 
         {/* Tool row */}
