@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Upload, Wand2, FileText, Trash2, Play } from 'lucide-react'
+import { toPng } from 'html-to-image'
+import { ArrowLeft, Upload, Wand2, FileText, Trash2, Play, Download } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -102,6 +103,66 @@ interface Job {
   error: string | null
 }
 
+interface BrandConfig {
+  captionColor?: string
+  logoUrl?: string
+  cta?: string
+}
+
+/** Renders a quote as a downloadable PNG card, styled by the brand template. */
+function QuoteCardArt({
+  quote,
+  attribution,
+  brand,
+  downloadLabel,
+}: {
+  quote: string
+  attribution: string
+  brand: BrandConfig | null
+  downloadLabel: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const accent = brand?.captionColor || '#facc15'
+
+  const download = async () => {
+    if (!ref.current) return
+    const dataUrl = await toPng(ref.current, { pixelRatio: 3, cacheBust: true })
+    const a = document.createElement('a')
+    a.href = dataUrl
+    a.download = 'quote-card.png'
+    a.click()
+  }
+
+  return (
+    <div className="space-y-2">
+      <div
+        ref={ref}
+        className="flex aspect-[4/5] flex-col justify-between overflow-hidden rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-950 p-7"
+      >
+        {brand?.logoUrl ? (
+          <img src={brand.logoUrl} alt="" className="h-7 w-auto self-start object-contain" />
+        ) : (
+          <div className="h-7" />
+        )}
+        <p className="text-2xl font-bold leading-snug text-white">
+          <span style={{ color: accent }}>“</span>
+          {quote}
+          <span style={{ color: accent }}>”</span>
+        </p>
+        <div>
+          <div className="mb-3 h-0.5 w-10" style={{ backgroundColor: accent }} />
+          <p className="text-sm font-medium text-white">{attribution}</p>
+          {brand?.cta && <p className="mt-1 text-xs text-white/60">{brand.cta}</p>}
+        </div>
+      </div>
+      <Button variant="outline" size="sm" className="w-full gap-2" onClick={download}>
+        <Download className="h-4 w-4" />
+        {downloadLabel}
+      </Button>
+    </div>
+  )
+}
+
 export const Route = createFileRoute('/projects/$id')({
   component: ProjectDetailPage,
 })
@@ -115,6 +176,7 @@ function ProjectDetailPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [clips, setClips] = useState<Clip[]>([])
   const [derivatives, setDerivatives] = useState<Derivative[]>([])
+  const [brand, setBrand] = useState<BrandConfig | null>(null)
   const [job, setJob] = useState<Job | null>(null)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -134,13 +196,15 @@ function ProjectDetailPage() {
       const projectData = await projectRes.json()
       setProject(projectData)
 
-      const [speakerRes, assetsRes, clipsRes, derivativesRes, jobsRes] = await Promise.all([
-        fetch(`${API_URL}/api/v1/speakers/${projectData.speaker_id}`),
-        fetch(`${API_URL}/api/v1/projects/${id}/assets`),
-        fetch(`${API_URL}/api/v1/projects/${id}/clips`),
-        fetch(`${API_URL}/api/v1/projects/${id}/derivatives`),
-        fetch(`${API_URL}/api/v1/projects/${id}/jobs`),
-      ])
+      const [speakerRes, assetsRes, clipsRes, derivativesRes, jobsRes, brandRes] =
+        await Promise.all([
+          fetch(`${API_URL}/api/v1/speakers/${projectData.speaker_id}`),
+          fetch(`${API_URL}/api/v1/projects/${id}/assets`),
+          fetch(`${API_URL}/api/v1/projects/${id}/clips`),
+          fetch(`${API_URL}/api/v1/projects/${id}/derivatives`),
+          fetch(`${API_URL}/api/v1/projects/${id}/jobs`),
+          fetch(`${API_URL}/api/v1/brand-templates`),
+        ])
 
       if (speakerRes.ok) setSpeaker(await speakerRes.json())
       if (assetsRes.ok) setAssets(await assetsRes.json())
@@ -149,6 +213,10 @@ function ProjectDetailPage() {
       if (jobsRes.ok) {
         const jobs: Job[] = await jobsRes.json()
         setJob(jobs[0] ?? null)
+      }
+      if (brandRes.ok) {
+        const templates: Array<{ config: BrandConfig }> = await brandRes.json()
+        setBrand(templates[0]?.config ?? null)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load project')
@@ -600,16 +668,16 @@ function ProjectDetailPage() {
       {quoteCardSets.length > 0 && (
         <div className="space-y-4 rounded-xl bg-card p-6 ring-1 ring-border">
           <h2 className="text-lg font-semibold">{t('projectDetail.quoteCards')}</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {quoteCardSets.flatMap((d) =>
               (d.content.quotes ?? []).map((q, i) => (
-                <blockquote
+                <QuoteCardArt
                   key={`${d.id}-${i}`}
-                  className="rounded-r-md border-l-4 border-primary bg-muted py-3 pl-4 pr-3"
-                >
-                  <p className="text-base italic">“{q.quote}”</p>
-                  <footer className="mt-2 text-sm text-muted-foreground">— {q.attribution}</footer>
-                </blockquote>
+                  quote={q.quote}
+                  attribution={q.attribution}
+                  brand={brand}
+                  downloadLabel={t('projectDetail.downloadCard')}
+                />
               ))
             )}
           </div>
