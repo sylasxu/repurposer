@@ -40,7 +40,9 @@ const zh = {
   },
   home: {
     newChat: "新对话",
-    hero: "把演讲变成可复用的知识资产",
+    heroPrefix: "把你讲过的内容变成",
+    heroWords: ["竖屏短片", "LinkedIn 长帖", "金句卡", "博客文章", "多语言摘要"],
+    heroSubtitle: "上传你的演讲、会议或访谈的视频片段或文字，我们会记住你的内容与风格，产出主流媒体需要的内容，就像你本人做的那样。",
     placeholder:
       "描述你想生成的内容，例如：把这场 45 分钟的 AI 安全演讲变成 5 条 LinkedIn 长帖、10 张金句卡、一份德语摘要和一期 Newsletter 内容...",
     reference: "演讲稿",

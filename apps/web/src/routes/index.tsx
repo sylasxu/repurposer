@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/popover"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { ThemeToggle } from "@/components/theme-toggle"
+import RotatingText from "@/components/RotatingText"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
@@ -112,6 +113,7 @@ function Home() {
   const [fileName, setFileName] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState("")
+  const [mounted, setMounted] = useState(false)
   const [autoSave, setAutoSave] = useState(true)
   const [autoImport, setAutoImport] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -133,6 +135,12 @@ function Home() {
     el.style.height = "auto"
     el.style.height = `${Math.min(el.scrollHeight, 240)}px`
   }, [prompt])
+
+  // RotatingText uses framer-motion; render it only after mount to keep the
+  // first paint identical between server and client (no hydration mismatch).
+  useEffect(() => setMounted(true), [])
+
+  const heroWords = t("home.heroWords", { returnObjects: true }) as string[]
 
   const handleGenerate = async () => {
     const file = fileInputRef.current?.files?.[0]
@@ -244,9 +252,24 @@ function Home() {
       {/* Hero / Prompt */}
       <section className="flex flex-col items-center px-6 pt-16 pb-10">
         <div className="w-full max-w-3xl text-center">
-          <h1 className="mb-10 text-4xl font-bold tracking-tight sm:text-5xl">
-            {t("home.hero")}
+          <h1 className="mb-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-4xl font-bold tracking-tight sm:text-5xl">
+            <span>{t("home.heroPrefix")}</span>
+            {mounted ? (
+              <RotatingText
+                texts={heroWords}
+                rotationInterval={2200}
+                splitBy="characters"
+                staggerDuration={0.02}
+                mainClassName="text-primary"
+                splitLevelClassName="overflow-hidden py-1"
+              />
+            ) : (
+              <span className="text-primary">{heroWords[0]}</span>
+            )}
           </h1>
+          <p className="mb-10 text-base text-muted-foreground sm:text-lg">
+            {t("home.heroSubtitle")}
+          </p>
 
           <Card className="overflow-hidden py-0 ring-1 ring-border shadow-xl">
             <CardContent className="p-4 text-left">
