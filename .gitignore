@@ -251,3 +251,7 @@ data/uploads/*
 data/outputs/*
 !data/uploads/.gitkeep
 !data/outputs/.gitkeep
+apps/api/data/uploads/*
+apps/api/data/outputs/*
+!apps/api/data/uploads/.gitkeep
+!apps/api/data/outputs/.gitkeep
