@@ -164,3 +164,15 @@ class HumanFeedback(Base):
     reason = Column(String(50), nullable=False)
     detail = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=now_utc)
+
+
+class BrandTemplate(Base):
+    """Brand / video template configuration."""
+
+    __tablename__ = "brand_templates"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    name = Column(String(255), nullable=False)
+    config = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), default=now_utc)
+    updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=now_utc)

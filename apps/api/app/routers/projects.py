@@ -3,18 +3,20 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from sqlalchemy import select
 
-from app.agents.analyzer import analyzer_agent
+from app.agents.blog import blog_agent
 from app.agents.linkedin import linkedin_agent
 from app.agents.quote_card import quote_card_agent
-from app.agents.script import script_agent
+from app.agents.summary import summary_agent
 from app.clients.minimax import MiniMaxError
 from app.dependencies import DBDep
 from app.models.schemas import (
     AssetType,
+    BlogPost,
     ClipResponse,
+    DerivativeResponse,
     DerivativeType,
     GenerateRequest,
     LinkedInPost,
@@ -24,9 +26,20 @@ from app.models.schemas import (
     ProjectUpdate,
     QuoteCardsResponse,
     SpeakerPersona,
+    Summary,
+    WorkflowRunResponse,
+    WorkflowStatus,
 )
-from app.models.tables import Asset, Clip, Derivative, Project, Speaker
+from app.models.tables import (
+    Asset,
+    Clip,
+    Derivative,
+    Project,
+    Speaker,
+    WorkflowRun,
+)
 from app.services.extraction import extract_text
+from app.services.generation import run_generation
 from app.services.storage import delete_file, delete_project_files
 
 router = APIRouter()
@@ -194,74 +207,71 @@ async def delete_project(project_id: UUID, db: DBDep) -> None:
     delete_project_files(project_id)
 
 
-@router.post("/{project_id}/generate", response_model=dict)
+@router.post("/{project_id}/generate", response_model=dict, status_code=status.HTTP_202_ACCEPTED)
 async def generate_content(
     project_id: UUID,
     request: GenerateRequest,
+    background_tasks: BackgroundTasks,
     db: DBDep,
 ) -> dict:
-    """Start content generation for a project.
+    """Queue background generation for a project.
 
-    Runs Analyzer -> Script agents and persists generated clips.
+    Creates a WorkflowRun, dispatches the orchestration to a background task,
+    and returns immediately with a job id to poll.
     """
-    project, speaker = await _load_project_and_speaker(project_id, db)
-    materials = await _extract_project_materials(project_id, db)
-
-    project.status = ProjectStatus.PROCESSING
-    await db.commit()
-
-    try:
-        analysis = await analyzer_agent.analyze(
-            materials=materials,
-            clip_count=request.clip_count,
-            event_name=project.event_name,
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
         )
 
-        persona = _parse_persona(speaker)
+    run = WorkflowRun(
+        project_id=project_id,
+        status=WorkflowStatus.PENDING,
+        current_step="queued",
+        progress=0,
+        context={
+            "outputs": request.outputs,
+            "clip_count": request.clip_count,
+            "tone_settings": (
+                request.tone_settings.model_dump() if request.tone_settings else None
+            ),
+            "target_language": request.target_language,
+        },
+    )
+    db.add(run)
+    project.status = ProjectStatus.PROCESSING
+    await db.commit()
+    await db.refresh(run)
 
-        generated_clips: list[Clip] = []
-        for segment in analysis.segments[: request.clip_count]:
-            script = await script_agent.generate(
-                segment=segment,
-                persona=persona,
-                tone_settings=request.tone_settings,
-                target_audience=analysis.target_audience,
-            )
-            clip = Clip(
-                project_id=project_id,
-                hook=script.hook,
-                script=script.model_dump(),
-                title_options=script.title_options,
-                music_mood=script.music_mood,
-                duration=script.duration_seconds,
-                language=project.language,
-                source_segment=segment.model_dump(),
-            )
-            db.add(clip)
-            generated_clips.append(clip)
+    background_tasks.add_task(run_generation, run.id)
 
-        await db.commit()
-        for clip in generated_clips:
-            await db.refresh(clip)
+    return {"job_id": str(run.id), "status": run.status.value}
 
-        project.status = ProjectStatus.REVIEW
-        await db.commit()
 
-    except MiniMaxError as e:
-        project.status = ProjectStatus.DRAFT
-        await db.commit()
+@router.get("/{project_id}/jobs", response_model=list[WorkflowRunResponse])
+async def list_project_jobs(project_id: UUID, db: DBDep) -> list[WorkflowRun]:
+    """List generation jobs for a project, newest first."""
+    result = await db.execute(
+        select(WorkflowRun)
+        .where(WorkflowRun.project_id == project_id)
+        .order_by(WorkflowRun.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+@router.get("/{project_id}/jobs/{job_id}", response_model=WorkflowRunResponse)
+async def get_project_job(project_id: UUID, job_id: UUID, db: DBDep) -> WorkflowRun:
+    """Get a single generation job's status."""
+    run = await db.get(WorkflowRun, job_id)
+    if run is None or run.project_id != project_id:
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(e),
-        ) from e
-
-    return {
-        "project_id": str(project_id),
-        "status": project.status.value,
-        "clip_count": len(generated_clips),
-        "clip_ids": [str(clip.id) for clip in generated_clips],
-        "message": f"Generated {len(generated_clips)} clips",
-    }
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found",
+        )
+    return run
 
 
 @router.get("/{project_id}/clips", response_model=list[ClipResponse])
@@ -281,8 +291,21 @@ async def list_project_clips(project_id: UUID, db: DBDep) -> list[Clip]:
     return list(result.scalars().all())
 
 
+@router.get("/{project_id}/derivatives", response_model=list[DerivativeResponse])
+async def list_project_derivatives(project_id: UUID, db: DBDep) -> list[Derivative]:
+    """List generated derivatives (LinkedIn posts, quote cards) for a project."""
+    result = await db.execute(
+        select(Derivative)
+        .where(Derivative.project_id == project_id)
+        .order_by(Derivative.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
 @router.post("/{project_id}/linkedin", response_model=LinkedInPost)
-async def generate_linkedin_post(project_id: UUID, db: DBDep) -> LinkedInPost:
+async def generate_linkedin_post(
+    project_id: UUID, request: GenerateRequest, db: DBDep
+) -> LinkedInPost:
     """Generate a LinkedIn post for a project."""
     project, speaker = await _load_project_and_speaker(project_id, db)
     materials = await _extract_project_materials(project_id, db)
@@ -317,6 +340,7 @@ async def generate_linkedin_post(project_id: UUID, db: DBDep) -> LinkedInPost:
 @router.post("/{project_id}/quote-cards", response_model=QuoteCardsResponse)
 async def generate_quote_cards(
     project_id: UUID,
+    request: GenerateRequest,
     count: int = 3,
     db: DBDep = None,  # type: ignore[assignment]
 ) -> QuoteCardsResponse:
@@ -344,6 +368,76 @@ async def generate_quote_cards(
         type=DerivativeType.QUOTE_CARD,
         content=result.model_dump(),
         language=project.language,
+    )
+    db.add(derivative)
+    await db.commit()
+    await db.refresh(derivative)
+
+    return result
+
+
+@router.post("/{project_id}/summary", response_model=Summary)
+async def generate_summary(
+    project_id: UUID, request: GenerateRequest, db: DBDep
+) -> Summary:
+    """Generate a multi-language summary for a project."""
+    project, speaker = await _load_project_and_speaker(project_id, db)
+    materials = await _extract_project_materials(project_id, db)
+    persona = _parse_persona(speaker)
+
+    try:
+        result = await summary_agent.generate(
+            materials=materials,
+            persona=persona,
+            event_name=project.event_name,
+            target_language=request.target_language,
+        )
+    except MiniMaxError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(e),
+        ) from e
+
+    derivative = Derivative(
+        project_id=project_id,
+        type=DerivativeType.SUMMARY,
+        content=result.model_dump(),
+        language=request.target_language,
+    )
+    db.add(derivative)
+    await db.commit()
+    await db.refresh(derivative)
+
+    return result
+
+
+@router.post("/{project_id}/blog", response_model=BlogPost)
+async def generate_blog(
+    project_id: UUID, request: GenerateRequest, db: DBDep
+) -> BlogPost:
+    """Generate a blog post for a project."""
+    project, speaker = await _load_project_and_speaker(project_id, db)
+    materials = await _extract_project_materials(project_id, db)
+    persona = _parse_persona(speaker)
+
+    try:
+        result = await blog_agent.generate(
+            materials=materials,
+            persona=persona,
+            event_name=project.event_name,
+            target_language=request.target_language,
+        )
+    except MiniMaxError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(e),
+        ) from e
+
+    derivative = Derivative(
+        project_id=project_id,
+        type=DerivativeType.BLOG,
+        content=result.model_dump(),
+        language=request.target_language,
     )
     db.add(derivative)
     await db.commit()

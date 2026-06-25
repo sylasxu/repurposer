@@ -231,6 +231,25 @@ class QuoteCardsResponse(BaseModel):
     quotes: list[QuoteCard] = Field(default_factory=list)
 
 
+class Summary(BaseModel):
+    """Generated multi-language summary."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    tldr: str
+    key_points: list[str] = Field(default_factory=list)
+    full: str
+
+
+class BlogPost(BaseModel):
+    """Generated blog post."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str
+    content: str
+
+
 class DerivativeType(StrEnum):
     """Derivative content types."""
 
@@ -238,6 +257,8 @@ class DerivativeType(StrEnum):
     QUOTE_CARD = "quote_card"
     CAROUSEL = "carousel"
     MULTILINGUAL_SCRIPT = "multilingual_script"
+    SUMMARY = "summary"
+    BLOG = "blog"
 
 
 class ClipResponse(BaseModel):
@@ -260,6 +281,22 @@ class ClipResponse(BaseModel):
     updated_at: datetime | None = None
 
 
+class DerivativeResponse(BaseModel):
+    """Generated derivative (LinkedIn post, quote cards, …)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    project_id: UUID
+    type: DerivativeType
+    content: dict
+    language: str
+    image_url: str | None = None
+    status: str
+    created_at: datetime
+    updated_at: datetime | None = None
+
+
 class GenerateRequest(BaseModel):
     """Generate content request."""
 
@@ -268,7 +305,10 @@ class GenerateRequest(BaseModel):
         default_factory=lambda: ["clips", "linkedin", "quote_cards"]
     )
     tone_settings: ToneSettings | None = None
-    target_language: str = Field(default="en", description="Target language for generated content (e.g. en, zh, fr, de, es, it)")
+    target_language: str = Field(
+        default="en",
+        description="Target language code, e.g. en/zh/fr/de/es/it",
+    )
 
 
 class FeedbackScope(StrEnum):
@@ -323,7 +363,35 @@ class WorkflowRunResponse(BaseModel):
     project_id: UUID
     status: WorkflowStatus
     current_step: str | None = None
-    progress: float = Field(default=0.0, ge=0.0, le=1.0)
+    progress: int = Field(default=0, ge=0, le=100)
     error: str | None = None
+    created_at: datetime
+    updated_at: datetime | None = None
+
+
+class BrandTemplateBase(BaseModel):
+    """Shared brand template fields."""
+
+    name: str
+    config: dict = Field(default_factory=dict)
+
+
+class BrandTemplateCreate(BrandTemplateBase):
+    """Create a brand template."""
+
+
+class BrandTemplateUpdate(BaseModel):
+    """Partial update of a brand template."""
+
+    name: str | None = None
+    config: dict | None = None
+
+
+class BrandTemplateResponse(BrandTemplateBase):
+    """Brand template response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
     created_at: datetime
     updated_at: datetime | None = None
