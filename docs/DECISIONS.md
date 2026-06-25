@@ -288,3 +288,27 @@ repurposer/
 - `apps/web/src/lib/i18n/locales/en.ts`
 - `CLAUDE.md`
 - `.claude/projects/-Users-sylas-repurposer/memory/repurposer-sidebar-opusclip-reference.md`
+
+## ADR-015：ORM 用 SQLAlchemy，迁移工具 Alembic 暂缓
+
+**状态**：已决策（记技术债）
+
+**背景**：后端已使用 SQLAlchemy 2.0（`[asyncio]` + asyncpg）作为 ORM，建表方式是启动时 `Base.metadata.create_all()`。`alembic>=1.13` 已在依赖中，但从未初始化（无 `alembic.ini` / `migrations/`）。
+
+**决策**：
+1. **不更换 ORM**：SQLAlchemy 2.0 async 已是正确选择，不评估替代品。
+2. **不为风格批量重写**：现有 79 处旧式 `Column(...)` 不重写成 2.0 的 `mapped_column`/`Mapped[]`/`relationship`（纯类型提示改进，不影响功能）；新表可酌情用新写法，但不强制。
+3. **暂不初始化 Alembic**：MVP 早期 schema 频繁变、单人开发、数据库可重建，此时 `create_all` + 必要时 `drop_all`+重建本地库足够，过早上迁移反而拖慢迭代。
+
+**触发条件（满足任一即初始化 Alembic，并把 `init_db` 从 `create_all` 改为跑迁移）**：
+- 需要给**已有表加列/改类型**且数据不能丢（P1 加 `Speaker.voice_id`、`Project.brand_template_id` 很可能就是触发点）；
+- 出现线上 / 共享测试库的真实数据；
+- 多人协作。
+
+**原因 / 注意**：
+- `create_all` **只建缺失的表，不会修改已存在表的列**——给已有表加列时它静默无效，模型与库会不一致并在运行时报错。这是迟早要踩的雷，必须在 P1 改已有表前处理。
+
+**相关文件**：
+- `apps/api/app/models/database.py`（`init_db`）
+- `apps/api/app/models/tables.py`
+- `apps/api/pyproject.toml`
