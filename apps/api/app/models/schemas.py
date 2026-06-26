@@ -311,6 +311,7 @@ class ClipSource(BaseModel):
     asset_id: UUID
     url: str  # browser-playable URL via storage.stream_url() (storage seam)
     fps: int = 30
+    duration: float | None = None  # source length (seconds) — trim slider bound
 
 
 class ClipSegment(BaseModel):

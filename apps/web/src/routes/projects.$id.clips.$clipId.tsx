@@ -7,7 +7,10 @@ import {
   ASPECT_DIMENSIONS,
   COMPOSITION_FPS,
   removeRange,
+  setTrim,
+  sourceDuration,
   totalDurationSeconds,
+  trimBounds,
   type CaptionCue,
   type ClipSpec,
 } from '@repurposer/clip'
@@ -298,6 +301,23 @@ function ClipEditorPage() {
 
               {/* Reframe via sliders (convention-aligned vs a hand-rolled drag box) */}
               <div className="space-y-3 sm:col-span-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{t('clipEditor.trim')}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {trimBounds(spec)[0].toFixed(1)}s – {trimBounds(spec)[1].toFixed(1)}s
+                  </span>
+                </div>
+                <Slider
+                  min={0}
+                  max={Math.ceil(sourceDuration(spec))}
+                  step={0.1}
+                  value={trimBounds(spec)}
+                  onValueChange={(v) => {
+                    const arr = Array.isArray(v) ? v : [v, v]
+                    setSpec(setTrim(spec, arr[0], arr[1]))
+                    setDirty(true)
+                  }}
+                />
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{t('clipEditor.reframePan')}</span>
                   <span className="text-xs text-muted-foreground">

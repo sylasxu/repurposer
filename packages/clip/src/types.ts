@@ -16,6 +16,8 @@ export interface ClipSource {
   /** Browser-playable URL via the storage seam (api Range endpoint or S3). */
   url: string;
   fps: number;
+  /** Source length in seconds (trim slider upper bound); optional for old specs. */
+  duration?: number | null;
 }
 
 export interface ClipSegment {
@@ -109,4 +111,37 @@ export const removeRange = (spec: ClipSpec, start: number, end: number): ClipSpe
     (c) => !(c.start >= start - eps && c.end <= end + eps),
   );
   return { ...spec, segments, caption_track };
+};
+
+/** Best-known source duration (seconds) for the trim slider's upper bound. */
+export const sourceDuration = (spec: ClipSpec): number => {
+  if (spec.source.duration && spec.source.duration > 0) return spec.source.duration;
+  const segEnd = spec.segments.reduce((m, s) => Math.max(m, s.end), 0);
+  const capEnd = spec.caption_track.reduce((m, c) => Math.max(m, c.end), 0);
+  return Math.max(segEnd, capEnd, 1);
+};
+
+/** Outer [start, end] of kept content — the current trim window. */
+export const trimBounds = (spec: ClipSpec): [number, number] => {
+  const kept = keptSegments(spec);
+  if (kept.length === 0) return [0, sourceDuration(spec)];
+  return [kept[0].start, kept[kept.length - 1].end];
+};
+
+/** Set the outer in/out by moving the first/last kept segment boundaries. */
+export const setTrim = (spec: ClipSpec, start: number, end: number): ClipSpec => {
+  if (end <= start) return spec;
+  const keptIdx = spec.segments
+    .map((s, i) => ({ s, i }))
+    .filter((x) => !x.s.hidden);
+  if (keptIdx.length === 0) return spec;
+  const firstI = keptIdx[0].i;
+  const lastI = keptIdx[keptIdx.length - 1].i;
+  const segments = spec.segments.map((s, i) => {
+    let ns = s;
+    if (i === firstI) ns = { ...ns, start };
+    if (i === lastI) ns = { ...ns, end };
+    return ns;
+  });
+  return { ...spec, segments };
 };

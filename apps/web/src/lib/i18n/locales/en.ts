@@ -262,6 +262,7 @@ const en: Resources = {
     musicToggle: "Music",
     titleToggle: "Title toggle",
     titlePlaceholder: "Title / hook text",
+    trim: "Trim",
     reframePan: "Horizontal pan",
     reframeZoom: "Zoom",
   },

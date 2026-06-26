@@ -107,7 +107,11 @@ def build_clip_spec(
     ]
 
     return ClipSpec(
-        source=ClipSource(asset_id=source.id, url=url),
+        source=ClipSource(
+            asset_id=source.id,
+            url=url,
+            duration=float(source.duration_seconds) if source.duration_seconds else None,
+        ),
         segments=[ClipSegment(start=start, end=end)],
         caption_track=caption_track,
         title=ClipTitle(text=segment.hook or "", enabled=bool(segment.hook)),

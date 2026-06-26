@@ -260,6 +260,7 @@ const zh = {
     musicToggle: "配乐",
     titleToggle: "标题开关",
     titlePlaceholder: "标题 / Hook 文案",
+    trim: "裁剪",
     reframePan: "水平构图",
     reframeZoom: "缩放",
   },
