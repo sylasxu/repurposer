@@ -93,7 +93,7 @@ cp .env.example .env
 项目使用 PostgreSQL，推荐用 Docker 跑数据库，省去本地安装。
 
 ```bash
-# 只启动数据库容器（postgres:16-alpine，端口 5432，库名 repurposer）
+# 只启动数据库容器（postgres:18-alpine，端口 5432，库名 repurposer）
 docker compose up -d db
 
 # 常用操作
@@ -158,12 +158,28 @@ just dev
 
 ### 5.（可选）全栈 Docker 一键运行
 
-无需本地装 Node / Python，直接用 Docker 跑 db + api + web：
+无需本地装 Node / Python，直接用 Docker 跑全栈 **db + api + worker + render + web**：
 
 ```bash
-docker compose up --build
-# 完成后同样访问 http://localhost:3000
+MINIMAX_API_KEY=sk-xxx docker compose up --build
+# 完成后访问 http://localhost:3000
 ```
+
+服务编排说明：
+
+| 服务 | 镜像/构建 | 说明 |
+|---|---|---|
+| `db` | postgres:18-alpine | 数据库，数据持久化在卷 `postgres_data` |
+| `api` | `apps/api/Dockerfile`（uv） | FastAPI，:8000 |
+| `worker` | 同 api 镜像，`command: python -m app.worker` | 队列消费者；调用 render 服务 |
+| `render` | `apps/render/Dockerfile`（构建上下文=仓库根） | Remotion 渲染服务，:3001，内置 Chromium |
+| `web` | `apps/web/Dockerfile`（构建上下文=仓库根） | TanStack Start SSR，:3000 |
+
+注意：
+- `render` / `web` 都依赖 workspace 包 `@repurposer/clip`，构建上下文是**仓库根**（不是各自子目录）。
+- 容器内主机名互联：`API_PUBLIC_URL=http://api:8000`、`RENDER_URL=http://render:3001/render`（render 通过 HTTP 回拉源视频，渲染结果写共享卷 `./data/outputs`）。
+- `render` 镜像内置无头 Chromium 的系统库；Chromium 二进制（约 90MB）在**首次渲染时**惰性下载（构建期不依赖外网，更适合 CI/受限网络）。
+- `web` 当前用 `vite preview` 起 SSR，适合 MVP/staging；高流量部署可换成围绕导出的 fetch handler 的轻量 node 适配层（见 ADR-018）。
 
 ## 文档
 

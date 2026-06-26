@@ -1,0 +1,14 @@
+# Repo-root build context (used by apps/render and apps/web Dockerfiles).
+# Keep it lean: deps get installed fresh in-image, build outputs are regenerated.
+**/node_modules
+**/dist
+**/.output
+**/.venv
+**/__pycache__
+**/*.pyc
+.git
+data
+**/.env
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache

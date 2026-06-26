@@ -60,7 +60,7 @@ elif with_timeout 5 docker ps >/dev/null 2>&1; then
       -e POSTGRES_PASSWORD=postgres \
       -e POSTGRES_DB=repurposer \
       -p 5432:5432 \
-      postgres:16-alpine 2>/dev/null \
+      postgres:18-alpine 2>/dev/null \
       || docker start repurposer-db 2>/dev/null \
       || echo "Could not start Postgres container (continuing anyway)."
   fi

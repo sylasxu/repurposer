@@ -412,3 +412,10 @@ uv run alembic downgrade -1
 **相关文件**：
 - `apps/render/`（`src/server.ts`/`render.ts`/`srt.ts`）、`packages/clip/`（`src/Clip.tsx`/`Root.tsx`/`types.ts`）
 - `pnpm-workspace.yaml`、`scripts/dev.sh`、`README.md`、`docs/VIDEO_EDITOR.md` §6
+
+**容器化（补充）**：
+- 全栈 5 服务都有 Dockerfile：`api`（uv，装 `libgomp1` 给 ctranslate2）、`worker`（复用 api 镜像换 `command`）、`render`、`web`。
+- **`render` / `web` 的构建上下文是仓库根**——它们 import workspace 包 `@repurposer/clip`，子目录上下文拿不到 `pnpm-workspace.yaml` / `pnpm-lock.yaml` / `packages/clip`。Dockerfile 先 COPY 各 workspace 的 `package.json`（pnpm 解析整图所需）+ lockfile 装依赖，再 COPY 源码，最大化层缓存。
+- `render` 镜像装无头 Chromium 的系统库（libnss3/libatk/libgbm/字体等）；Chromium 二进制在**首次渲染时惰性下载**（不在构建期拉，避免构建依赖外网、在 CI/受限网络上挂起；render 服务运行时本就有外网用于回拉源视频）。生产可在 Remotion 下载目录挂缓存卷避免重启重下。
+- 容器内服务名互联：`API_PUBLIC_URL=http://api:8000`、`RENDER_URL=http://render:3001/render`（覆盖 `config.py` 里的 localhost 默认）。render 写共享卷 `./data/outputs`，api 经 Range 端点服务。
+- **`web` 用 `vite preview` 起 SSR**：MVP/staging 够用；高流量再换围绕导出 fetch handler（`dist/server/server.js`）的轻量 node http 适配层。这是当前唯一未在容器里端到端跑通就交付的点。
