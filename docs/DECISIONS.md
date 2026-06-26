@@ -332,3 +332,56 @@ uv run alembic downgrade -1
 - `apps/api/app/models/database.py`（`init_db`）
 - `apps/api/app/models/tables.py`
 - `apps/api/pyproject.toml`
+
+## ADR-016：竖屏短片编辑器——钉死 clip-spec 契约，Remotion 作为第一渲染器（可替换黑盒）
+
+**状态**：已决策（详细设计见 [VIDEO_EDITOR.md](./VIDEO_EDITOR.md)）
+
+**背景**：「竖屏短片成片」确定为 MVP 必须项，且必须可编辑。需要在"自研 FFmpeg / Remotion / CapCut Web 客户端引擎"之间定型，并明确编辑能做到什么级别。
+
+**决策**：
+1. **钉死唯一契约：声明式 `clip-spec(JSON)`**（渲染器无关，只描述"是什么"：segment 列表 / 裁切 / 字幕轨 / 样式预设 / 标题 / 配乐 / 品牌）。渲染器是契约背后的**可替换实现**。
+2. **第一个渲染器用 Remotion**（服务端，无头 Chrome + 内部 FFmpeg），当作 `spec→MP4+SRT` 的**黑盒**；Node 渲染服务用 pnpm 启动、自托管 EU，由现有 Python 队列触发。
+3. **品类定位 = OpusClip 类**（服务端流水线 + 浏览器瘦编辑面 + 甩剪映精剪），**不做 CapCut Web 客户端引擎**。
+4. **编辑形态 = Descript 式文档编辑**：文字稿编辑（删句=剪段，非破坏性可恢复）+ 词↔时间码 + **单轨 trim**；**不做多轨 NLE / 图层合成 / 转场特效 / B-roll 库 / 自动人脸追踪**（L3，甩下游）。
+5. **样式限定在预设枚举**（CSS 与 libass 都能表达），保证"预览=成片"且保留将来换手搓 FFmpeg 的低成本。
+6. **ASR（词级时间戳）从可选 P1 升级为硬前置**；视频需**可流式播放/seek**（本地文件系统 + FastAPI Range 端点即可，**对象存储非必需**，按 ADR-011 留到规模化）。没有 ASR + 可播放视频，编辑器搭不起来。
+
+**原因**：
+- 我们的任务是"处理已有素材"，编辑需求最高只到"裁段+字幕+样式"，够不到多轨 NLE；自研 WASM 引擎是给不存在的需求付几年工程。
+- Remotion 让 parity（预览=成片）结构上天然成立、媒体脏活成熟、`<Player>` 直接当预览、契合 React 栈——对小团队是更快到精致 MVP 的路径。
+- 因为契约稳定，**低后悔**：将来账单/规模有压力可换手搓 FFmpeg（clip-spec→filtergraph + 两端共享 libass）或客户端 WebCodecs，spec 不动。
+
+**代价 / 注意**：
+- 引入一个 Node 渲染服务（多语言栈，但边界是干净黑盒）+ Remotion license（4+ 人 $25/seat 或 $0.01/render）。
+- "无头 Chrome 逐帧渲处理任务"较重，但 MVP 规模（短片）无碍，高量再优化或换手搓。
+- Python 没有 Remotion 等价物（web-tech parity 范式绑死 JS/浏览器）：要 parity 就接受 Node；坚持纯 Python 则落到 ffmpeg-python + 共享 libass 手搓（另一个范式）。
+
+**相关文件**：
+- `docs/VIDEO_EDITOR.md`
+- `apps/api/app/models/tables.py`（`Clip` 加 `render_spec/render_status/render_error/srt_url`）
+- `apps/api/app/worker.py`、`apps/api/app/services/jobs.py`（渲染认领源）
+- `.claude/projects/-Users-sylas-repurposer/memory/repurposer-video-editing-direction.md`
+
+## ADR-017：Postgres 当任务队列（不上 Redis），独立 worker 进程
+
+**状态**：已实施
+
+**背景**：ASR、视频渲染等是耗时重活；原先生成跑在 FastAPI `BackgroundTasks`（进程内、重启即丢、无重试、无并发控制），素材上传是同步阻塞。需要可靠的异步执行层。
+
+**决策**：
+1. **用 Postgres `FOR UPDATE SKIP LOCKED` 把数据库当队列**，**不引入 Redis/Celery**（符合 ADR-001 简单优先；将来横向扩展再换 arq/Celery 是一处替换）。
+2. 独立 **worker 进程**（`python -m app.worker`）轮询认领 `Asset`（待处理）和 `WorkflowRun`（待生成），与 API 进程物理隔离；启动 `reap_stale` 重置孤儿任务。
+3. `Asset` 加 `processing_status`(pending/processing/completed/failed) + `processing_error`；上传改为落盘即返回 pending，前端轮询。
+4. `app/services/asset_processing.py` 按类型分发 processor——**ASR/OCR 未来唯一接入点**（现 video/audio 为 no-op）。
+5. 生成统一走 `/generate` 的 outputs 多选（clips/linkedin/quote_cards/summary/blog），删除原先 4 个重复的同步生成端点。
+
+**原因**：
+- 内部验证阶段（ADR-012）的吞吐/规模还用不到 Redis；DB 当队列零新增中间件。
+- worker 进程隔离让重活不拖在线请求；`SKIP LOCKED` 支持多 worker 安全并发。
+
+**相关文件**：
+- `apps/api/app/worker.py`、`apps/api/app/services/jobs.py`、`apps/api/app/services/asset_processing.py`
+- `apps/api/app/models/tables.py`（`Asset.processing_status`）
+- `scripts/dev.sh`、`docker-compose.yml`（worker 进程，无 redis）
+- `.claude/projects/-Users-sylas-repurposer/memory/repurposer-queue-foundation.md`
