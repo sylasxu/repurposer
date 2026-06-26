@@ -260,6 +260,8 @@ const zh = {
     musicToggle: "配乐",
     titleToggle: "标题开关",
     titlePlaceholder: "标题 / Hook 文案",
+    reframePan: "水平构图",
+    reframeZoom: "缩放",
   },
   brandTemplate: {
     title: "品牌模板",

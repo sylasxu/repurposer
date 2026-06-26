@@ -262,6 +262,8 @@ const en: Resources = {
     musicToggle: "Music",
     titleToggle: "Title toggle",
     titlePlaceholder: "Title / hook text",
+    reframePan: "Horizontal pan",
+    reframeZoom: "Zoom",
   },
   brandTemplate: {
     title: "Brand template",

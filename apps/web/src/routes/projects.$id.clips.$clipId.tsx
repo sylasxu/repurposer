@@ -15,6 +15,7 @@ import { ArrowLeft, Download, FileText, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -292,6 +293,36 @@ function ClipEditorPage() {
                   onChange={(e) => patchSpec({ title: { ...spec.title, text: e.target.value } })}
                   placeholder={t('clipEditor.titlePlaceholder')}
                   className="h-9 flex-1"
+                />
+              </div>
+
+              {/* Reframe via sliders (convention-aligned vs a hand-rolled drag box) */}
+              <div className="space-y-3 sm:col-span-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{t('clipEditor.reframePan')}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {Math.round(spec.crop.x * 100)}%
+                  </span>
+                </div>
+                <Slider
+                  min={0}
+                  max={100}
+                  value={[Math.round(spec.crop.x * 100)]}
+                  onValueChange={(v) =>
+                    patchSpec({ crop: { ...spec.crop, x: (Array.isArray(v) ? v[0] : v) / 100 } })
+                  }
+                />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{t('clipEditor.reframeZoom')}</span>
+                  <span className="text-xs text-muted-foreground">{spec.crop.scale.toFixed(2)}×</span>
+                </div>
+                <Slider
+                  min={100}
+                  max={250}
+                  value={[Math.round(spec.crop.scale * 100)]}
+                  onValueChange={(v) =>
+                    patchSpec({ crop: { ...spec.crop, scale: (Array.isArray(v) ? v[0] : v) / 100 } })
+                  }
                 />
               </div>
             </div>
