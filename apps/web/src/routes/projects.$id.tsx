@@ -2,9 +2,25 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toPng } from 'html-to-image'
-import { ArrowLeft, Upload, Wand2, FileText, Trash2, Play, Download } from 'lucide-react'
+import {
+  ArrowLeft,
+  Upload,
+  Wand2,
+  FileText,
+  Trash2,
+  Play,
+  Download,
+  Pencil,
+  X,
+  FileArchive,
+} from 'lucide-react'
+
+import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -32,7 +48,7 @@ interface Project {
   event_name: string | null
   status: string
   language: string
-  speaker_id: string
+  speaker_id: string | null
   created_at: string
 }
 
@@ -75,8 +91,11 @@ interface Clip {
   script: ClipScript
   title_options: string[]
   music_mood: string
+  status: string
+  video_url: string | null
   duration: number
   created_at: string
+  updated_at: string | null
 }
 
 interface Derivative {
@@ -93,6 +112,7 @@ interface Derivative {
   }
   language: string
   created_at: string
+  updated_at: string | null
 }
 
 interface Job {
@@ -187,6 +207,14 @@ function ProjectDetailPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [targetLanguage, setTargetLanguage] = useState('en')
+  const [exporting, setExporting] = useState(false)
+
+  // Inline editing state
+  const [editingClipId, setEditingClipId] = useState<string | null>(null)
+  const [editClipHook, setEditClipHook] = useState('')
+  const [editClipTitles, setEditClipTitles] = useState('')
+  const [editingDerivativeId, setEditingDerivativeId] = useState<string | null>(null)
+  const [editDerivativeContent, setEditDerivativeContent] = useState('')
 
   const fetchData = async () => {
     setLoading(true)
@@ -198,7 +226,9 @@ function ProjectDetailPage() {
 
       const [speakerRes, assetsRes, clipsRes, derivativesRes, jobsRes, brandRes] =
         await Promise.all([
-          fetch(`${API_URL}/api/v1/speakers/${projectData.speaker_id}`),
+          projectData.speaker_id
+            ? fetch(`${API_URL}/api/v1/speakers/${projectData.speaker_id}`)
+            : Promise.resolve(new Response('null')),
           fetch(`${API_URL}/api/v1/projects/${id}/assets`),
           fetch(`${API_URL}/api/v1/projects/${id}/clips`),
           fetch(`${API_URL}/api/v1/projects/${id}/derivatives`),
@@ -206,7 +236,13 @@ function ProjectDetailPage() {
           fetch(`${API_URL}/api/v1/brand-templates`),
         ])
 
-      if (speakerRes.ok) setSpeaker(await speakerRes.json())
+      if (projectData.speaker_id && speakerRes.ok) setSpeaker(await speakerRes.json())
+      else
+        setSpeaker({
+          id: '',
+          name: t('composer.styleDefault'),
+          persona: null,
+        })
       if (assetsRes.ok) setAssets(await assetsRes.json())
       if (clipsRes.ok) setClips(await clipsRes.json())
       if (derivativesRes.ok) setDerivatives(await derivativesRes.json())
@@ -346,6 +382,103 @@ function ProjectDetailPage() {
     }
   }
 
+  const handleExport = async () => {
+    if (!clips.length && !derivatives.length) {
+      setError(t('projectDetail.noContentToExport'))
+      return
+    }
+    setExporting(true)
+    setError('')
+    setMessage('')
+    try {
+      const res = await fetch(`${API_URL}/api/v1/projects/${id}/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formats: ['text'] }),
+      })
+      if (!res.ok) throw new Error(t('projectDetail.exportFailed'))
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('content-disposition')
+      const filename = disposition?.match(/filename="?([^"]+)"?/)?.[1] || 'export.zip'
+      a.download = filename
+      a.click()
+      window.URL.revokeObjectURL(url)
+      setMessage(t('projectDetail.exportSuccess'))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('projectDetail.exportFailed'))
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const startEditClip = (clip: Clip) => {
+    setEditingClipId(clip.id)
+    setEditClipHook(clip.hook)
+    setEditClipTitles((clip.title_options || []).join('\n'))
+  }
+
+  const cancelEditClip = () => {
+    setEditingClipId(null)
+    setEditClipHook('')
+    setEditClipTitles('')
+  }
+
+  const saveClip = async (clipId: string) => {
+    setError('')
+    try {
+      const res = await fetch(`${API_URL}/api/v1/clips/${clipId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hook: editClipHook,
+          title_options: editClipTitles
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean),
+        }),
+      })
+      if (!res.ok) throw new Error('Save failed')
+      setMessage(t('projectDetail.msgSaved'))
+      setEditingClipId(null)
+      fetchData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed')
+    }
+  }
+
+  const startEditDerivative = (d: Derivative) => {
+    setEditingDerivativeId(d.id)
+    setEditDerivativeContent(d.content.content || '')
+  }
+
+  const cancelEditDerivative = () => {
+    setEditingDerivativeId(null)
+    setEditDerivativeContent('')
+  }
+
+  const saveDerivative = async (derivativeId: string) => {
+    setError('')
+    try {
+      const d = derivatives.find((x) => x.id === derivativeId)
+      const res = await fetch(`${API_URL}/api/v1/derivatives/${derivativeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: { ...d?.content, content: editDerivativeContent },
+        }),
+      })
+      if (!res.ok) throw new Error('Save failed')
+      setMessage(t('projectDetail.msgSaved'))
+      setEditingDerivativeId(null)
+      fetchData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed')
+    }
+  }
+
   const linkedinPosts = derivatives.filter((d) => d.type === 'linkedin_post')
   const quoteCardSets = derivatives.filter((d) => d.type === 'quote_card')
   const summaries = derivatives.filter((d) => d.type === 'summary')
@@ -362,31 +495,47 @@ function ProjectDetailPage() {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={t('projectDetail.back')}
-          render={<Link to="/projects" />}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
-          {project.event_name && (
-            <p className="text-sm text-muted-foreground">{project.event_name}</p>
-          )}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('projectDetail.back')}
+            render={<Link to="/projects" />}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
+            {project.event_name && (
+              <p className="text-sm text-muted-foreground">{project.event_name}</p>
+            )}
+          </div>
         </div>
+        <Button
+          variant="outline"
+          className="h-9 gap-2"
+          disabled={exporting || (!clips.length && !derivatives.length)}
+          onClick={handleExport}
+        >
+          {exporting ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            <FileArchive className="h-4 w-4" />
+          )}
+          {exporting ? t('projectDetail.exporting') : t('projectDetail.exportAll')}
+        </Button>
       </div>
 
       {/* Status banner */}
       {(message || error) && (
         <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
+          className={cn(
+            'rounded-lg border px-4 py-3 text-sm',
             error
               ? 'border-destructive/30 bg-destructive/10 text-destructive'
               : 'border-border bg-muted text-foreground'
-          }`}
+          )}
         >
           {error || message}
         </div>
@@ -579,61 +728,117 @@ function ProjectDetailPage() {
             {t('projectDetail.generatedClips', { count: clips.length })}
           </h2>
           <div className="space-y-4">
-            {clips.map((clip, index) => (
-              <div key={clip.id} className="space-y-4 rounded-lg border border-border p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
-                      <h3 className="text-lg font-semibold">{clip.hook}</h3>
+            {clips.map((clip, index) => {
+              const isEditing = editingClipId === clip.id
+              return (
+                <Card key={clip.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          #{index + 1}
+                        </span>
+                        {isEditing ? (
+                          <Input
+                            value={editClipHook}
+                            onChange={(e) => setEditClipHook(e.target.value)}
+                            className="h-8 flex-1"
+                          />
+                        ) : (
+                          <h3 className="text-lg font-semibold">{clip.hook}</h3>
+                        )}
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                        <span>{clip.duration}s</span>
+                        <span>·</span>
+                        <span>BGM: {clip.music_mood}</span>
+                        <span>·</span>
+                        <span>Score: {clip.script.virality_score ?? '-'}</span>
+                      </div>
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                      <span>{clip.duration}s</span>
-                      <span>·</span>
-                      <span>BGM: {clip.music_mood}</span>
-                      <span>·</span>
-                      <span>Score: {clip.script.virality_score ?? '-'}</span>
+                    <div className="flex items-center gap-1">
+                      {isEditing ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => saveClip(clip.id)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={cancelEditClip}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => startEditClip(clip)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          {t('projectDetail.edit')}
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" className="gap-1 text-primary">
+                        <Play className="h-4 w-4" />
+                        {t('projectDetail.preview')}
+                      </Button>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="gap-1 text-primary">
-                    <Play className="h-4 w-4" />
-                    {t('projectDetail.preview')}
-                  </Button>
-                </div>
 
-                {clip.title_options.length > 0 && (
-                  <div>
-                    <p className="mb-2 text-sm font-medium">{t('projectDetail.titleOptions')}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {clip.title_options.map((title, i) => (
-                        <Badge key={i} variant="secondary">
-                          {title}
-                        </Badge>
+                  {clip.title_options.length > 0 && (
+                    <div className="mt-4">
+                      <p className="mb-2 text-sm font-medium">
+                        {t('projectDetail.titleOptions')}
+                      </p>
+                      {isEditing ? (
+                        <Textarea
+                          value={editClipTitles}
+                          onChange={(e) => setEditClipTitles(e.target.value)}
+                          className="min-h-[80px]"
+                          placeholder="One title per line"
+                        />
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {clip.title_options.map((title, i) => (
+                            <Badge key={i} variant="secondary">
+                              {title}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-4">
+                    <p className="mb-2 text-sm font-medium">{t('projectDetail.scriptShots')}</p>
+                    <div className="space-y-2">
+                      {clip.script.shots.map((shot, i) => (
+                        <div key={i} className="rounded-md bg-muted p-3">
+                          <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
+                            <span className="font-medium">{shot.time_range}</span>
+                            <span>·</span>
+                            <span>{shot.mood}</span>
+                          </div>
+                          <p className="text-foreground">{shot.subtitle}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {t('projectDetail.visual', { value: shot.visual })}
+                          </p>
+                        </div>
                       ))}
                     </div>
                   </div>
-                )}
-
-                <div>
-                  <p className="mb-2 text-sm font-medium">{t('projectDetail.scriptShots')}</p>
-                  <div className="space-y-2">
-                    {clip.script.shots.map((shot, i) => (
-                      <div key={i} className="rounded-md bg-muted p-3">
-                        <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
-                          <span className="font-medium">{shot.time_range}</span>
-                          <span>·</span>
-                          <span>{shot.mood}</span>
-                        </div>
-                        <p className="text-foreground">{shot.subtitle}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {t('projectDetail.visual', { value: shot.visual })}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
+                </Card>
+              )
+            })}
           </div>
         </div>
       )}
@@ -645,7 +850,17 @@ function ProjectDetailPage() {
             {t('projectDetail.linkedinPosts')} ({linkedinPosts.length})
           </h2>
           {linkedinPosts.map((d) => (
-            <div key={d.id} className="space-y-3 rounded-lg border border-border p-4">
+            <EditableDerivative
+              key={d.id}
+              derivative={d}
+              isEditing={editingDerivativeId === d.id}
+              content={editDerivativeContent}
+              onContentChange={setEditDerivativeContent}
+              onStartEdit={() => startEditDerivative(d)}
+              onCancel={cancelEditDerivative}
+              onSave={() => saveDerivative(d.id)}
+              t={t}
+            >
               <p className="whitespace-pre-wrap text-sm">{d.content.content}</p>
               {d.content.hashtags && d.content.hashtags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -656,10 +871,7 @@ function ProjectDetailPage() {
                   ))}
                 </div>
               )}
-              <p className="text-xs text-muted-foreground/70">
-                {new Date(d.created_at).toLocaleString()} · {d.language}
-              </p>
-            </div>
+            </EditableDerivative>
           ))}
         </div>
       )}
@@ -689,7 +901,17 @@ function ProjectDetailPage() {
         <div className="space-y-4 rounded-xl bg-card p-6 ring-1 ring-border">
           <h2 className="text-lg font-semibold">{t('projectDetail.summary')}</h2>
           {summaries.map((d) => (
-            <div key={d.id} className="space-y-3 rounded-lg border border-border p-4">
+            <EditableDerivative
+              key={d.id}
+              derivative={d}
+              isEditing={editingDerivativeId === d.id}
+              content={editDerivativeContent}
+              onContentChange={setEditDerivativeContent}
+              onStartEdit={() => startEditDerivative(d)}
+              onCancel={cancelEditDerivative}
+              onSave={() => saveDerivative(d.id)}
+              t={t}
+            >
               {d.content.tldr && <p className="font-medium">{d.content.tldr}</p>}
               {d.content.key_points && d.content.key_points.length > 0 && (
                 <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
@@ -701,10 +923,7 @@ function ProjectDetailPage() {
               {d.content.full && (
                 <p className="whitespace-pre-wrap text-sm">{d.content.full}</p>
               )}
-              <p className="text-xs text-muted-foreground/70">
-                {new Date(d.created_at).toLocaleString()} · {d.language}
-              </p>
-            </div>
+            </EditableDerivative>
           ))}
         </div>
       )}
@@ -714,18 +933,82 @@ function ProjectDetailPage() {
         <div className="space-y-4 rounded-xl bg-card p-6 ring-1 ring-border">
           <h2 className="text-lg font-semibold">{t('projectDetail.blog')}</h2>
           {blogs.map((d) => (
-            <div key={d.id} className="space-y-2 rounded-lg border border-border p-4">
+            <EditableDerivative
+              key={d.id}
+              derivative={d}
+              isEditing={editingDerivativeId === d.id}
+              content={editDerivativeContent}
+              onContentChange={setEditDerivativeContent}
+              onStartEdit={() => startEditDerivative(d)}
+              onCancel={cancelEditDerivative}
+              onSave={() => saveDerivative(d.id)}
+              t={t}
+            >
               {d.content.title && (
                 <h3 className="text-base font-semibold">{d.content.title}</h3>
               )}
               <p className="whitespace-pre-wrap text-sm">{d.content.content}</p>
-              <p className="text-xs text-muted-foreground/70">
-                {new Date(d.created_at).toLocaleString()} · {d.language}
-              </p>
-            </div>
+            </EditableDerivative>
           ))}
         </div>
       )}
     </div>
+  )
+}
+
+function EditableDerivative({
+  derivative,
+  isEditing,
+  content,
+  onContentChange,
+  onStartEdit,
+  onCancel,
+  onSave,
+  t,
+  children,
+}: {
+  derivative: Derivative
+  isEditing: boolean
+  content: string
+  onContentChange: (v: string) => void
+  onStartEdit: () => void
+  onCancel: () => void
+  onSave: () => void
+  t: (key: string) => string
+  children: React.ReactNode
+}) {
+  return (
+    <Card className="p-4">
+      {isEditing ? (
+        <div className="space-y-3">
+          <Textarea
+            value={content}
+            onChange={(e) => onContentChange(e.target.value)}
+            className="min-h-[160px]"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={onCancel}>
+              {t('projectDetail.cancel')}
+            </Button>
+            <Button size="sm" onClick={onSave}>
+              {t('projectDetail.save')}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {children}
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground/70">
+              {new Date(derivative.created_at).toLocaleString()} · {derivative.language}
+            </p>
+            <Button variant="ghost" size="sm" className="gap-1" onClick={onStartEdit}>
+              <Pencil className="h-3.5 w-3.5" />
+              {t('projectDetail.edit')}
+            </Button>
+          </div>
+        </div>
+      )}
+    </Card>
   )
 }

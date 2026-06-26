@@ -12,6 +12,7 @@ from app.dependencies import DBDep
 from app.models.schemas import (
     ClipResponse,
     ClipScript,
+    ClipUpdate,
     FeedbackRequest,
     Segment,
     SpeakerPersona,
@@ -83,11 +84,6 @@ async def revise_clip(
 
     result = await db.execute(select(Speaker).where(Speaker.id == project.speaker_id))
     speaker = result.scalar_one_or_none()
-    if not speaker:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Speaker not found",
-        )
 
     # Parse existing script and source segment
     try:
@@ -110,7 +106,7 @@ async def revise_clip(
         )
 
     persona = None
-    if speaker.persona:
+    if speaker is not None and speaker.persona:
         persona = SpeakerPersona.model_validate(speaker.persona)
 
     # Persist feedback first
@@ -143,6 +139,50 @@ async def revise_clip(
     clip.duration = revised_script.duration_seconds
     clip.updated_at = datetime.now(UTC)
 
+    await db.commit()
+    await db.refresh(clip)
+    return clip
+
+
+@router.put("/{clip_id}", response_model=ClipResponse)
+async def update_clip(
+    clip_id: UUID,
+    data: ClipUpdate,
+    db: DBDep,
+) -> Clip:
+    """Directly edit a clip (hook, script, title options, music mood)."""
+    result = await db.execute(select(Clip).where(Clip.id == clip_id))
+    clip = result.scalar_one_or_none()
+    if not clip:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Clip not found",
+        )
+
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        if field == "script" and value is not None:
+            setattr(clip, field, value.model_dump())
+        elif value is not None:
+            setattr(clip, field, value)
+
+    # Keep the nested script object in sync with top-level fields.
+    script_dict = dict(clip.script) if isinstance(clip.script, dict) else clip.script.model_dump()
+    if data.hook is not None:
+        script_dict["hook"] = data.hook
+    if data.title_options is not None:
+        script_dict["title_options"] = data.title_options
+    if data.music_mood is not None:
+        script_dict["music_mood"] = data.music_mood
+    clip.script = script_dict
+
+    # Sync top-level hook/duration/music_mood if script was updated
+    if data.script is not None:
+        clip.hook = data.script.hook
+        clip.music_mood = data.script.music_mood
+        clip.duration = data.script.duration_seconds
+
+    clip.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(clip)
     return clip
