@@ -1,5 +1,7 @@
 """Database setup."""
 
+from alembic import command
+from alembic.config import Config as AlembicConfig
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
@@ -20,6 +22,13 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
+def get_alembic_config() -> AlembicConfig:
+    """Return an Alembic config pointing at the project migrations."""
+    alembic_cfg = AlembicConfig("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
+    return alembic_cfg
+
+
 async def get_db() -> AsyncSession:
     """Get database session."""
     async with AsyncSessionLocal() as session:
@@ -30,6 +39,6 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db() -> None:
-    """Initialize database tables."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """Initialize database by running Alembic migrations to head."""
+    alembic_cfg = get_alembic_config()
+    command.upgrade(alembic_cfg, "head")

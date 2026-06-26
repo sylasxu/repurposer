@@ -60,6 +60,16 @@ else
   echo "  (Make sure Postgres is reachable on 5432 yourself.)"
 fi
 
+# --- database migrations ---------------------------------------------------
+# Apply Alembic migrations before starting the API so schema issues surface
+# immediately rather than inside the FastAPI lifespan.
+if port_in_use 5432 || with_timeout 5 docker ps >/dev/null 2>&1; then
+  echo "Applying database migrations..."
+  ( cd "$ROOT/apps/api" && uv run alembic upgrade head ) || echo "Migration step exited (continuing anyway)."
+else
+  echo "Postgres does not appear to be available — skipping migrations."
+fi
+
 # --- backend ---------------------------------------------------------------
 echo "Starting API on http://localhost:8000 ..."
 ( cd "$ROOT/apps/api" && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 ) &

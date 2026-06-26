@@ -173,6 +173,10 @@ apps/api/
 │   │   └── quote_card.j2
 │   └── clients/
 │       └── minimax.py       # MiniMax M3 封装
+├── migrations/              # Alembic 迁移脚本
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/
 ├── pyproject.toml
 └── README.md
 ```

@@ -289,26 +289,46 @@ repurposer/
 - `CLAUDE.md`
 - `.claude/projects/-Users-sylas-repurposer/memory/repurposer-sidebar-opusclip-reference.md`
 
-## ADR-015：ORM 用 SQLAlchemy，迁移工具 Alembic 暂缓
+## ADR-015：ORM 用 SQLAlchemy，迁移工具使用 Alembic
 
-**状态**：已决策（记技术债）
+**状态**：已实施
 
-**背景**：后端已使用 SQLAlchemy 2.0（`[asyncio]` + asyncpg）作为 ORM，建表方式是启动时 `Base.metadata.create_all()`。`alembic>=1.13` 已在依赖中，但从未初始化（无 `alembic.ini` / `migrations/`）。
+**背景**：后端已使用 SQLAlchemy 2.0（`[asyncio]` + asyncpg）作为 ORM。早期使用启动时 `Base.metadata.create_all()` 建表，但随着功能演进，需要修改已有表的列约束（例如 `projects.speaker_id` 改为 nullable），`create_all` 无法处理这类变更。
 
 **决策**：
 1. **不更换 ORM**：SQLAlchemy 2.0 async 已是正确选择，不评估替代品。
-2. **不为风格批量重写**：现有 79 处旧式 `Column(...)` 不重写成 2.0 的 `mapped_column`/`Mapped[]`/`relationship`（纯类型提示改进，不影响功能）；新表可酌情用新写法，但不强制。
-3. **暂不初始化 Alembic**：MVP 早期 schema 频繁变、单人开发、数据库可重建，此时 `create_all` + 必要时 `drop_all`+重建本地库足够，过早上迁移反而拖慢迭代。
+2. **不为风格批量重写**：现有旧式 `Column(...)` 不重写成 2.0 的 `mapped_column`/`Mapped[]`/`relationship`（纯类型提示改进，不影响功能）；新表可酌情用新写法，但不强制。
+3. **使用 Alembic 管理 schema 变更**：已初始化 `alembic.ini`、`migrations/env.py` 和 `migrations/versions/`。
+4. **应用启动时自动迁移**：`app/models/database.py` 的 `init_db()` 在 lifespan 中调用 `alembic.command.upgrade(..., "head")`，确保新环境或 CI 自动同步到最新 schema。
+5. **Alembic env.py 使用同步驱动**：主应用继续使用 `postgresql+asyncpg`，Alembic 迁移使用 `postgresql+psycopg2`，避免在已有 uvloop 事件循环中调用 `asyncio.run()` 的问题。
 
-**触发条件（满足任一即初始化 Alembic，并把 `init_db` 从 `create_all` 改为跑迁移）**：
-- 需要给**已有表加列/改类型**且数据不能丢（P1 加 `Speaker.voice_id`、`Project.brand_template_id` 很可能就是触发点）；
-- 出现线上 / 共享测试库的真实数据；
-- 多人协作。
+**迁移工作流**：
+
+```bash
+cd apps/api
+
+# 应用迁移
+uv run alembic upgrade head
+
+# 查看当前版本
+uv run alembic current
+
+# 修改 models 后生成新迁移
+uv run alembic revision --autogenerate -m "describe change"
+
+# 回滚一级
+uv run alembic downgrade -1
+```
 
 **原因 / 注意**：
-- `create_all` **只建缺失的表，不会修改已存在表的列**——给已有表加列时它静默无效，模型与库会不一致并在运行时报错。这是迟早要踩的雷，必须在 P1 改已有表前处理。
+- `create_all` **只建缺失的表，不会修改已存在表的列**——给已有表加列/改约束时它静默无效，模型与库会不一致并在运行时报错。
+- 自动迁移适合本地开发和简单部署；生产环境建议在部署流程中显式执行 `alembic upgrade head`，而不是依赖应用启动时的自动迁移。
+- 生成迁移后务必人工检查生成的脚本，autogenerate 不是 100% 准确（例如 enum、复杂约束可能需要手动调整）。
 
 **相关文件**：
+- `apps/api/alembic.ini`
+- `apps/api/migrations/env.py`
+- `apps/api/migrations/versions/`
 - `apps/api/app/models/database.py`（`init_db`）
 - `apps/api/app/models/tables.py`
 - `apps/api/pyproject.toml`

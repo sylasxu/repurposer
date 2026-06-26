@@ -18,6 +18,7 @@ dependencies = [
     "pypdf>=4.2",
     "tenacity>=8.4",
     "structlog>=24.1",
+    "psycopg2-binary>=2.9.12",
 ]
 
 [project.optional-dependencies]
@@ -31,9 +32,13 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = ["migrations/versions/*.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"migrations/env.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

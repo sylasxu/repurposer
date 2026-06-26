@@ -19,12 +19,14 @@
 repurposer/
 ├── apps/
 │   ├── api/                 # FastAPI 后端
+│   │   └── migrations/      # Alembic 数据库迁移
 │   └── web/                 # TanStack Start 前端
 ├── docs/                    # 项目文档
 │   ├── PRD.md              # 产品需求文档
 │   ├── ARCHITECTURE.md     # 架构设计
 │   ├── API.md              # API 规范
-│   └── DECISIONS.md        # 架构决策记录
+│   ├── DECISIONS.md        # 架构决策记录
+│   └── DATABASE_MIGRATIONS.md  # 数据库迁移指南
 ├── scripts/
 │   └── dev.sh              # 本地一键启动
 ├── docker-compose.yml
@@ -99,7 +101,31 @@ docker compose stop db     # 停止
 
 > Docker 不可用时，脚本会打印警告并跳过，此时请自行保证 5432 端口有可连接的 PostgreSQL。
 
-### 4. 一键启动应用，然后访问 3000
+### 4. 运行数据库迁移
+
+后端使用 [Alembic](https://alembic.sqlalchemy.org/) 管理数据库 schema 变更。首次启动前或拉取新代码后，需要应用迁移到最新版本：
+
+```bash
+cd apps/api
+uv run alembic upgrade head
+```
+
+常用命令：
+
+```bash
+# 查看当前迁移版本
+uv run alembic current
+
+# 生成新的自动迁移（修改 models 后执行）
+uv run alembic revision --autogenerate -m "describe your change"
+
+# 回滚一级
+uv run alembic downgrade -1
+```
+
+> **注意**：`./scripts/dev.sh` 会在启动 API 前自动运行 `uv run alembic upgrade head`，所以日常本地开发不手动跑迁移也可以。但首次部署或 CI 中建议显式执行。
+
+### 5. 一键启动应用，然后访问 3000
 
 ```bash
 # 方式一：shell 脚本（推荐）
