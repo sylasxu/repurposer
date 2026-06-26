@@ -18,6 +18,7 @@ from app.agents.script import script_agent
 from app.agents.summary import summary_agent
 from app.models.database import AsyncSessionLocal
 from app.models.schemas import (
+    AssetType,
     DerivativeType,
     ProjectStatus,
     SpeakerPersona,
@@ -25,6 +26,7 @@ from app.models.schemas import (
     WorkflowStatus,
 )
 from app.models.tables import Asset, Clip, Derivative, Project, Speaker, WorkflowRun
+from app.services.clip_spec import build_clip_spec
 
 logger = structlog.get_logger()
 
@@ -66,13 +68,27 @@ async def run_generation(run_id: UUID) -> None:
             asset_rows = await db.execute(
                 select(Asset).where(Asset.project_id == project.id)
             )
+            assets = list(asset_rows.scalars().all())
             materials = [
                 text
-                for a in asset_rows.scalars().all()
+                for a in assets
                 if (text := (a.extracted_text or a.transcript))
             ]
             if not materials:
                 raise ValueError("No source material to analyze")
+
+            # Source video/audio (with ASR word timestamps) to render clips from;
+            # None for text-only projects -> clips carry no render_spec.
+            source_av = next(
+                (
+                    a
+                    for a in assets
+                    if a.type in (AssetType.VIDEO, AssetType.AUDIO)
+                    and a.file_url
+                    and (a.meta or {}).get("words")
+                ),
+                None,
+            )
 
             persona = (
                 SpeakerPersona.model_validate(speaker.persona)
@@ -132,6 +148,13 @@ async def run_generation(run_id: UUID) -> None:
                         tone_settings=tone_settings,
                         target_audience=analysis.target_audience,
                     )
+                    # render_spec = the actual render contract (None for
+                    # text-only projects). script stays as the AI suggestion.
+                    spec = (
+                        build_clip_spec(source_av, segment, target_language)
+                        if source_av is not None
+                        else None
+                    )
                     db.add(
                         Clip(
                             project_id=project.id,
@@ -142,6 +165,7 @@ async def run_generation(run_id: UUID) -> None:
                             duration=script.duration_seconds,
                             language=target_language,
                             source_segment=segment.model_dump(),
+                            render_spec=spec.model_dump(mode="json") if spec else None,
                         )
                     )
                 await db.commit()
