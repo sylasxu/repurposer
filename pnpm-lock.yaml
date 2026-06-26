@@ -54,6 +54,12 @@ importers:
       '@fontsource-variable/inter':
         specifier: ^5.2.8
         version: 5.2.8
+      '@remotion/player':
+        specifier: ^4.0.0
+        version: 4.0.484(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@repurposer/clip':
+        specifier: workspace:*
+        version: link:../../packages/clip
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.3.1(vite@8.1.0(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4))
@@ -102,6 +108,9 @@ importers:
       react-i18next:
         specifier: ^17.0.8
         version: 17.0.8(i18next@26.3.3(typescript@6.0.3))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
+      remotion:
+        specifier: ^4.0.0
+        version: 4.0.484(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       shadcn:
         specifier: ^4.11.0
         version: 4.12.0(typescript@6.0.3)

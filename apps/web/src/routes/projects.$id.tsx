@@ -107,6 +107,8 @@ interface Clip {
   music_mood: string
   status: string
   video_url: string | null
+  render_spec: unknown | null
+  render_status: string | null
   duration: number
   created_at: string
   updated_at: string | null
@@ -832,10 +834,22 @@ function ProjectDetailPage() {
                           {t('projectDetail.edit')}
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" className="gap-1 text-primary">
-                        <Play className="h-4 w-4" />
-                        {t('projectDetail.preview')}
-                      </Button>
+                      {clip.render_spec ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1 text-primary"
+                          render={
+                            <Link
+                              to="/projects/$id/clips/$clipId"
+                              params={{ id, clipId: clip.id }}
+                            />
+                          }
+                        >
+                          <Play className="h-4 w-4" />
+                          {t('projectDetail.openEditor')}
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
 

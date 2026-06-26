@@ -215,6 +215,7 @@ const zh = {
     score: "评分",
     scriptShots: "内容分段",
     preview: "预览",
+    openEditor: "打开编辑器",
     visual: "视觉元素: {{value}}",
     edit: "编辑",
     save: "保存",
@@ -238,6 +239,12 @@ const zh = {
     msgGenerated: "已生成 {{count}} 项资产",
     msgSaved: "已保存",
     deleteConfirm: "Delete this asset?",
+  },
+  clipEditor: {
+    back: "返回",
+    title: "片段编辑",
+    noRenderSpec: "该片段没有可渲染的视频（纯文本/无源视频项目）",
+    panelsSoon: "字幕 / 样式 / 导出面板即将上线。",
   },
   brandTemplate: {
     title: "品牌模板",

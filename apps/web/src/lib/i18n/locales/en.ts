@@ -217,6 +217,7 @@ const en: Resources = {
     score: "Score",
     scriptShots: "Content sections",
     preview: "Preview",
+    openEditor: "Open editor",
     visual: "Visual: {{value}}",
     edit: "Edit",
     save: "Save",
@@ -240,6 +241,12 @@ const en: Resources = {
     msgGenerated: "Generated {{count}} assets",
     msgSaved: "Saved",
     deleteConfirm: "Delete this asset?",
+  },
+  clipEditor: {
+    back: "Back",
+    title: "Clip editor",
+    noRenderSpec: "This clip has no renderable video (text-only / no source video)",
+    panelsSoon: "Captions / style / export panels coming soon.",
   },
   brandTemplate: {
     title: "Brand template",

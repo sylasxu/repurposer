@@ -23,6 +23,19 @@ from app.models.tables import Clip, HumanFeedback, Project, Speaker
 router = APIRouter()
 
 
+@router.get("/{clip_id}", response_model=ClipResponse)
+async def get_clip(clip_id: UUID, db: DBDep) -> Clip:
+    """Get a single clip (editor load + render-status polling)."""
+    result = await db.execute(select(Clip).where(Clip.id == clip_id))
+    clip = result.scalar_one_or_none()
+    if not clip:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Clip not found",
+        )
+    return clip
+
+
 @router.post(
     "/{clip_id}/feedback",
     response_model=dict,
