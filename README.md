@@ -4,12 +4,15 @@
 
 ## 技术栈
 
-- **后端**：FastAPI + Python
+- **后端**：FastAPI + Python（含队列 worker）
 - **核心模型**：MiniMax M3
 - **前端**：TanStack Start + TypeScript
-- **包管理**：后端 `uv`，前端 `pnpm`
+- **视频渲染**：Remotion（`apps/render`，Node 服务，clip-spec → MP4+SRT）
+- **语音识别**：faster-whisper（自托管，词级时间戳）
+- **任务队列**：Postgres（`FOR UPDATE SKIP LOCKED`）+ 独立 worker，不上 Redis
+- **包管理**：后端 `uv`；前端/渲染/共享组件用 `pnpm` workspace（`web`/`render`/`clip`）
 - **数据库**：PostgreSQL
-- **文件存储**：本地文件系统（P0）
+- **文件存储**：本地文件系统（对象存储留到规模化）
 - **本地协调**：`Justfile` / `scripts/dev.sh`
 - **部署**：Docker Compose
 
@@ -18,17 +21,21 @@
 ```
 repurposer/
 ├── apps/
-│   ├── api/                 # FastAPI 后端
+│   ├── api/                 # FastAPI 后端（队列 worker / ASR）
 │   │   └── migrations/      # Alembic 数据库迁移
-│   └── web/                 # TanStack Start 前端
+│   ├── web/                 # TanStack Start 前端（含竖屏编辑器）
+│   └── render/              # Remotion 渲染服务（clip-spec → MP4+SRT, Node）
+├── packages/
+│   └── clip/                # 共享 Remotion <Clip> 组件（web 预览 + render 出片，保 parity）
 ├── docs/                    # 项目文档
 │   ├── PRD.md              # 产品需求文档
 │   ├── ARCHITECTURE.md     # 架构设计
-│   ├── API.md              # API 规范
+│   ├── VIDEO_EDITOR.md     # 竖屏短片编辑器设计
 │   ├── DECISIONS.md        # 架构决策记录
 │   └── DATABASE_MIGRATIONS.md  # 数据库迁移指南
 ├── scripts/
 │   └── dev.sh              # 本地一键启动
+├── pnpm-workspace.yaml     # web/render/clip 工作区（api 独立用 uv，不在工作区内）
 ├── docker-compose.yml
 ├── Justfile
 └── README.md
@@ -67,10 +74,12 @@ npm install -g pnpm
 cd apps/api
 uv sync
 
-# 前端
-cd apps/web
+# 前端 + 渲染服务 + 共享组件（pnpm workspace，在仓库根目录执行一次即可）
 pnpm install
 ```
+
+> `pnpm install` 在根目录执行会一次装好 `apps/web`、`apps/render`、`packages/clip` 三个 workspace 包。
+> 首次启动渲染服务时 Remotion 会下载一个无头 Chromium（约几百 MB），属正常。
 
 ### 2. 配置环境变量
 
@@ -135,7 +144,7 @@ uv run alembic downgrade -1
 just dev
 ```
 
-脚本会同时拉起 **后端（:8000）** 和 **前端（:3000）**，并在需要时自动启动数据库。
+脚本会同时拉起 **后端（:8000）**、**队列 worker**、**渲染服务（:3001）** 和 **前端（:3000）**，并在需要时自动启动数据库。
 启动完成后，浏览器打开 👉 **http://localhost:3000**
 
 | 服务 | 地址 |
@@ -143,6 +152,9 @@ just dev
 | 前端（Web App） | http://localhost:3000 |
 | 后端（API） | http://localhost:8000 |
 | API 文档（Swagger） | http://localhost:8000/docs |
+| 渲染服务（Remotion） | http://localhost:3001 |
+
+> 渲染服务（`apps/render`）是 api worker 调用的黑盒（clip-spec → MP4+SRT）；纯文本产出流程不需要它。
 
 ### 5.（可选）全栈 Docker 一键运行
 
@@ -165,6 +177,7 @@ docker compose up --build
 
 - 后端代码放在 `apps/api/`
 - 前端代码放在 `apps/web/`（TanStack Start）
+- 视频渲染服务放在 `apps/render/`（Remotion，Node）；共享的 `<Clip>` 组件放在 `packages/clip/`
 - 文档放在 `docs/`
-- 不引入 Turborepo/Nx 等 monorepo 工具，保持简单
+- 用轻量 **pnpm workspace** 串起 `web`/`render`/`clip`（共享 Remotion 组件以保证「预览=成片」）；**不引入 Turborepo/Nx 等重型 monorepo 工具**。`apps/api` 独立用 `uv`，不在 workspace 内
 - 前后端通过 REST API 通信，类型由后端 OpenAPI 生成

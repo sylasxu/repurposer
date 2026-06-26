@@ -385,3 +385,30 @@ uv run alembic downgrade -1
 - `apps/api/app/models/tables.py`（`Asset.processing_status`）
 - `scripts/dev.sh`、`docker-compose.yml`（worker 进程，无 redis）
 - `.claude/projects/-Users-sylas-repurposer/memory/repurposer-queue-foundation.md`
+
+## ADR-018：渲染服务独立为 apps/render + 共享 packages/clip + pnpm workspace
+
+**状态**：已实施
+
+**背景**：Remotion 的 parity（预览=成片）要求 `<Clip>` 组件被 web 的 `<Player>`（预览）和渲染服务的 `renderMedia`（出片）**共用同一份**。需要决定渲染服务和这份共享组件放在仓库哪里，且不破坏 ADR-001 的运行时隔离。
+
+**决策**：
+1. **渲染服务独立为 `apps/render/`**（Node/pnpm，`@remotion/bundler` + `@remotion/renderer` + express），对外是 `POST /render: spec→MP4+SRT` 黑盒。**不放 `apps/api/` 下**（api 是 Python/uv，混运行时违反 ADR-001）。
+2. **`<Clip>` 组件 + clip-spec TS 类型抽到 `packages/clip/`** 共享包（`@repurposer/clip`），web 和 render 都 import。
+3. **用轻量 pnpm workspace**（`pnpm-workspace.yaml` 含 `apps/web`/`apps/render`/`packages/*`）串起三个 TS 包；**`apps/api` 独立用 uv，不进 workspace**。
+4. `onlyBuiltDependencies` 从 `apps/web` 移到 workspace 根。
+
+**原因**：
+- parity 要求组件共享 —— 这是选 Remotion 的全部理由，不能两边各写一份。
+- pnpm workspace 是**最轻的共享机制**（一个 yaml），不是 ADR-001 反对的 Turborepo/Nx/Bazel；这是对 ADR-001「无共享代码」前提的合理演进（现在确实有一份必须共享的 `<Clip>`）。
+- api 保持 Python/uv 完全隔离。
+
+**约束与注意**：
+- render 的 `spec.source.url` 必须是**绝对 URL**（api worker 调用前把存储 seam 的相对 URL 绝对化）。
+- render 把 MP4/SRT 写到共享 `data/outputs`，api 经 Range 端点服务（存储 seam）。
+- 首次渲染 Remotion 会下载无头 Chromium（约几百 MB）；个别原生依赖的 build script 可能需 `pnpm approve-builds`。
+- `<Clip>` MVP 渲染首个 kept 段；多段 concat（文字稿删句产生间隔）是后续扩展。
+
+**相关文件**：
+- `apps/render/`（`src/server.ts`/`render.ts`/`srt.ts`）、`packages/clip/`（`src/Clip.tsx`/`Root.tsx`/`types.ts`）
+- `pnpm-workspace.yaml`、`scripts/dev.sh`、`README.md`、`docs/VIDEO_EDITOR.md` §6

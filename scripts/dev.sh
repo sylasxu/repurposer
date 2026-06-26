@@ -82,12 +82,19 @@ echo "Starting background worker ..."
 ( cd "$ROOT/apps/api" && uv run python -m app.worker ) &
 WORKER_PID=$!
 
+# --- render service --------------------------------------------------------
+# Remotion render service (clip-spec -> MP4+SRT). Node/pnpm, headless Chrome +
+# bundled FFmpeg. Black box the api worker calls; not needed for text-only flows.
+echo "Starting render service on http://localhost:3001 ..."
+( cd "$ROOT/apps/render" && pnpm dev ) &
+RENDER_PID=$!
+
 # --- frontend --------------------------------------------------------------
 echo "Starting web app on http://localhost:3000 ..."
 ( cd "$ROOT/apps/web" && pnpm dev ) &
 WEB_PID=$!
 
 # --- cleanup ---------------------------------------------------------------
-trap 'echo; echo "Shutting down..."; kill "$API_PID" "$WORKER_PID" "$WEB_PID" 2>/dev/null; exit' INT TERM
+trap 'echo; echo "Shutting down..."; kill "$API_PID" "$WORKER_PID" "$RENDER_PID" "$WEB_PID" 2>/dev/null; exit' INT TERM
 
 wait

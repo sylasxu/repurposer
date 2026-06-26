@@ -7,7 +7,7 @@ setup-backend:
     cd apps/api && uv sync
 
 setup-frontend:
-    cd apps/web && pnpm install
+    pnpm install
 
 setup: setup-backend setup-frontend
     cp .env.example .env
@@ -25,6 +25,9 @@ typecheck-backend:
 typecheck-frontend:
     cd apps/web && pnpm typecheck
 
+typecheck-render:
+    pnpm --filter @repurposer/clip typecheck && pnpm --filter @repurposer/render typecheck
+
 test-backend:
     cd apps/api && uv run pytest
 
@@ -35,4 +38,4 @@ db-down:
     docker compose down
 
 clean:
-    rm -rf apps/api/.venv apps/web/node_modules data/uploads/* data/outputs/*
+    rm -rf apps/api/.venv node_modules apps/*/node_modules packages/*/node_modules data/uploads/* data/outputs/*
