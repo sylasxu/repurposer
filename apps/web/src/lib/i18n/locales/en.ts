@@ -245,8 +245,12 @@ const en: Resources = {
   clipEditor: {
     back: "Back",
     title: "Clip editor",
+    save: "Save",
     noRenderSpec: "This clip has no renderable video (text-only / no source video)",
-    panelsSoon: "Captions / style / export panels coming soon.",
+    transcript: "Transcript",
+    transcriptHint: "Click a word to fix · delete a line to cut",
+    noCaptions: "No captions",
+    deleteLine: "Delete this line",
   },
   brandTemplate: {
     title: "Brand template",

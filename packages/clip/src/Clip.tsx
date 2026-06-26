@@ -1,17 +1,23 @@
 import React from "react";
-import { AbsoluteFill, OffthreadVideo, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  AbsoluteFill,
+  OffthreadVideo,
+  Series,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import type { CaptionCue, ClipSpec } from "./types";
 import { COMPOSITION_FPS, keptSegments } from "./types";
 
 /**
  * The single source of truth for how a clip looks — consumed by BOTH the
  * editor's <Player> (preview) and the render service (export). Rendering both
- * from this one component is what makes "preview == final video" structural
- * rather than something we have to keep in sync by hand.
+ * from this one component is what makes "preview == final video" structural.
  *
- * MVP scope: renders the FIRST kept segment (generation currently emits one).
- * Multi-segment concat (after transcript "delete sentence" creates gaps) is a
- * documented extension — see docs/VIDEO_EDITOR.md.
+ * Multi-segment: kept (non-hidden) segments are concatenated via <Series>
+ * (transcript "delete sentence" splits a segment into kept + hidden + kept).
+ * Captions are looked up by SOURCE time, which is remapped from the cut output
+ * timeline; the editor removes a deleted range's cues from caption_track too.
  */
 
 const WORDS_PER_LINE = 7;
@@ -27,14 +33,24 @@ function groupLines(cues: CaptionCue[]): CaptionCue[][] {
 export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const seg = keptSegments(spec)[0];
+  const fpsv = fps || COMPOSITION_FPS;
 
-  const segStart = seg?.start ?? 0;
-  const segEnd = seg?.end ?? 0;
-  const sourceTime = segStart + frame / (fps || COMPOSITION_FPS);
-  // Render the source only when present — keeps the composition valid for
-  // text/audio-only or preview-before-source cases (renders captions on black).
-  const hasSource = Boolean(seg && spec.source.url);
+  // Concatenated output timeline of kept segments (gaps for deleted ranges cut).
+  const kept = keptSegments(spec);
+  let acc = 0;
+  const timeline = kept.map((seg) => {
+    const dur = Math.max(0, seg.end - seg.start);
+    const entry = { seg, outStart: acc, dur };
+    acc += dur;
+    return entry;
+  });
+
+  const outputTime = frame / fpsv;
+  const current =
+    timeline.find((t) => outputTime >= t.outStart && outputTime < t.outStart + t.dur) ??
+    timeline[timeline.length - 1];
+  const sourceTime = current ? current.seg.start + (outputTime - current.outStart) : 0;
+  const hasSource = Boolean(spec.source.url && timeline.length > 0);
 
   const lines = groupLines(spec.caption_track);
   const activeLine =
@@ -54,12 +70,18 @@ export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
             transform: `scale(${spec.crop.scale}) translate(${(0.5 - spec.crop.x) * 100}%, ${(0.5 - spec.crop.y) * 100}%)`,
           }}
         >
-          <OffthreadVideo
-            src={spec.source.url}
-            startFrom={Math.round(segStart * (fps || COMPOSITION_FPS))}
-            endAt={Math.round(segEnd * (fps || COMPOSITION_FPS))}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
+          <Series>
+            {timeline.map((t, i) => (
+              <Series.Sequence key={i} durationInFrames={Math.max(1, Math.round(t.dur * fpsv))}>
+                <OffthreadVideo
+                  src={spec.source.url}
+                  startFrom={Math.round(t.seg.start * fpsv)}
+                  endAt={Math.round(t.seg.end * fpsv)}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </Series.Sequence>
+            ))}
+          </Series>
         </AbsoluteFill>
       ) : null}
 

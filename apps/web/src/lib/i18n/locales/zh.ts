@@ -243,8 +243,12 @@ const zh = {
   clipEditor: {
     back: "返回",
     title: "片段编辑",
+    save: "保存",
     noRenderSpec: "该片段没有可渲染的视频（纯文本/无源视频项目）",
-    panelsSoon: "字幕 / 样式 / 导出面板即将上线。",
+    transcript: "字幕文稿",
+    transcriptHint: "点词修正 · 删行剪掉该段",
+    noCaptions: "暂无字幕",
+    deleteLine: "删除这一行",
   },
   brandTemplate: {
     title: "品牌模板",

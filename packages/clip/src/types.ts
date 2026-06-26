@@ -80,3 +80,33 @@ export const totalDurationSeconds = (spec: ClipSpec): number => {
   const total = keptSegments(spec).reduce((acc, s) => acc + Math.max(0, s.end - s.start), 0);
   return total > 0 ? total : 1 / COMPOSITION_FPS;
 };
+
+/**
+ * Non-destructively remove a source time range [start, end] (transcript "delete
+ * sentence" = cut): the overlapped part of each kept segment becomes a `hidden`
+ * segment (recoverable), and caption cues inside the range are dropped.
+ */
+export const removeRange = (spec: ClipSpec, start: number, end: number): ClipSpec => {
+  if (end <= start) return spec;
+  const segments: ClipSegment[] = [];
+  for (const s of spec.segments) {
+    if (s.hidden) {
+      segments.push(s);
+      continue;
+    }
+    const a = Math.max(start, s.start);
+    const b = Math.min(end, s.end);
+    if (a >= b) {
+      segments.push(s);
+      continue;
+    }
+    if (s.start < a) segments.push({ start: s.start, end: a, hidden: false });
+    segments.push({ start: a, end: b, hidden: true });
+    if (b < s.end) segments.push({ start: b, end: s.end, hidden: false });
+  }
+  const eps = 1e-6;
+  const caption_track = spec.caption_track.filter(
+    (c) => !(c.start >= start - eps && c.end <= end + eps),
+  );
+  return { ...spec, segments, caption_track };
+};
