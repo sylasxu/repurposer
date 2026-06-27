@@ -8,7 +8,8 @@ bake it into the clip-spec, so the render service / preview never touch the DB.
 
 from typing import Any, Literal
 
-from app.models.schemas import ClipBrand
+from app.models.schemas import ClipBrand, ClipMusic
+from app.services.storage import music_url
 
 
 def brand_from_template(config: dict[str, Any] | None) -> ClipBrand:
@@ -33,4 +34,22 @@ def brand_from_template(config: dict[str, Any] | None) -> ClipBrand:
         caption_color=_clean("captionColor"),
         caption_size=caption_size,
         fill_mode=fill_mode,
+    )
+
+
+def music_from_template(config: dict[str, Any] | None) -> ClipMusic:
+    """Map a BrandTemplate.config's music settings to a ClipMusic block.
+
+    ``musicMood`` (calm/uplifting/corporate/none) resolves to a built-in track
+    URL via the storage seam; ``musicEnabled`` toggles playback. ``none`` or a
+    missing mood yields a disabled, track-less block (renderer plays no audio).
+    """
+    cfg = config or {}
+    mood = cfg.get("musicMood")
+    if not isinstance(mood, str) or mood in ("", "none"):
+        return ClipMusic()
+    return ClipMusic(
+        track_id=mood,
+        url=music_url(mood),
+        enabled=bool(cfg.get("musicEnabled")),
     )

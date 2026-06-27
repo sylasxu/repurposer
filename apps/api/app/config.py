@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # Storage
     upload_dir: Path = Path("./data/uploads")
     output_dir: Path = Path("./data/outputs")
+    music_dir: Path = Path("./data/music")  # built-in mood music library
 
     # API
     api_host: str = "0.0.0.0"
@@ -48,6 +49,7 @@ class Settings(BaseSettings):
         """Ensure storage directories exist."""
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.music_dir.mkdir(parents=True, exist_ok=True)
 
 
 settings = Settings()

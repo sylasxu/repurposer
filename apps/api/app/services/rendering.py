@@ -36,6 +36,12 @@ def _absolutize(spec: dict[str, Any]) -> dict[str, Any]:
         logo = brand.get("logo_url") or ""
         if logo.startswith("/"):
             brand["logo_url"] = base + logo
+    # Background music track URL (built-in mood library is storage-relative).
+    music = spec.get("music")
+    if isinstance(music, dict):
+        track = music.get("url") or ""
+        if track.startswith("/"):
+            music["url"] = base + track
     return spec
 
 

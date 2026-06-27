@@ -48,6 +48,7 @@ export interface ClipTitle {
 
 export interface ClipMusic {
   track_id: string | null;
+  url?: string | null;
   enabled: boolean;
   gain_db: number;
 }

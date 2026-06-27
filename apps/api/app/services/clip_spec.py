@@ -16,6 +16,7 @@ from typing import Any, cast
 from app.models.schemas import (
     CaptionCue,
     ClipBrand,
+    ClipMusic,
     ClipSegment,
     ClipSource,
     ClipSpec,
@@ -85,6 +86,7 @@ def build_clip_spec(
     target_language: str,
     *,
     brand: ClipBrand | None = None,
+    music: ClipMusic | None = None,
     brand_ref: Any = None,
 ) -> ClipSpec | None:
     """Build a render-ready clip-spec, or None if the source can't be rendered."""
@@ -119,5 +121,6 @@ def build_clip_spec(
         title=ClipTitle(text=segment.hook or "", enabled=bool(segment.hook)),
         target_language=target_language,
         brand=brand,
+        music=music or ClipMusic(),
         brand_ref=brand_ref,
     )

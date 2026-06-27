@@ -65,6 +65,11 @@ function withAbsoluteSource(spec: ClipSpec): ClipSpec {
   if (logo && logo.startsWith('/')) {
     next = { ...next, brand: { ...next.brand, logo_url: API_URL + logo } }
   }
+  // Background music track is a storage-relative URL too.
+  const track = next.music?.url
+  if (track && track.startsWith('/')) {
+    next = { ...next, music: { ...next.music, url: API_URL + track } }
+  }
   return next
 }
 

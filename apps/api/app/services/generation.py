@@ -34,7 +34,7 @@ from app.models.tables import (
     Speaker,
     WorkflowRun,
 )
-from app.services.brand import brand_from_template
+from app.services.brand import brand_from_template, music_from_template
 from app.services.clip_spec import build_clip_spec
 
 logger = structlog.get_logger()
@@ -162,6 +162,7 @@ async def run_generation(run_id: UUID) -> None:
                     )
                 ).scalar_one_or_none()
                 brand = brand_from_template(bt.config) if bt is not None else None
+                music = music_from_template(bt.config) if bt is not None else None
                 brand_ref = bt.id if bt is not None else None
                 for segment in analysis.segments[:clip_count]:
                     script = await script_agent.generate(
@@ -178,6 +179,7 @@ async def run_generation(run_id: UUID) -> None:
                             segment,
                             target_language,
                             brand=brand,
+                            music=music,
                             brand_ref=brand_ref,
                         )
                         if source_av is not None

@@ -13,7 +13,7 @@ partial content), which is what video scrubbing needs.
 from fastapi import APIRouter, HTTPException, status
 from starlette.responses import FileResponse
 
-from app.services.storage import resolve_output_safe, resolve_safe
+from app.services.storage import resolve_music_safe, resolve_output_safe, resolve_safe
 
 router = APIRouter()
 
@@ -30,7 +30,21 @@ async def stream_upload(file_path: str) -> FileResponse:
     return FileResponse(path)
 
 
-@router.get("/outputs/{file_path:path}")
+@router.get("/music/{mood}")
+async def stream_music(mood: str) -> FileResponse:
+    """Stream a built-in mood track (e.g. ``calm``), with Range support.
+
+    The mood is extension-less; the resolver finds ``{mood}.<ext>`` under the
+    music library so dropping in ``calm.mp3`` just works. 404 until a track for
+    that mood is provided.
+    """
+    path = resolve_music_safe(mood)
+    if path is None or not path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Music track not found",
+        )
+    return FileResponse(path)
 async def stream_output(file_path: str) -> FileResponse:
     """Stream a rendered output (MP4/SRT) by relative path, with Range support."""
     path = resolve_output_safe(file_path)

@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
   Img,
   OffthreadVideo,
   Series,
@@ -67,8 +68,15 @@ export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
   const accent =
     spec.caption_style_preset === "karaoke-highlight" ? "#facc15" : captionColor;
 
+  // Background music: play the baked track when enabled, looped to fill the clip.
+  const music = spec.music;
+  const musicUrl = music?.enabled ? music.url ?? null : null;
+  const musicVolume = Math.min(1, Math.pow(10, (music?.gain_db ?? -18) / 20));
+
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
+      {musicUrl ? <Audio src={musicUrl} volume={musicVolume} loop /> : null}
+
       {hasSource ? (
         <AbsoluteFill
           style={{

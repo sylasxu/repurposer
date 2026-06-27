@@ -107,6 +107,27 @@ def resolve_output_safe(relative_path: str | None) -> Path | None:
     return _resolve_within(settings.output_dir, relative_path)
 
 
+# Audio extensions the built-in mood library may use, in resolution priority.
+_MUSIC_EXTS = (".mp3", ".m4a", ".aac", ".ogg", ".wav")
+
+
+def resolve_music_safe(name: str | None) -> Path | None:
+    """Resolve a mood name (e.g. ``calm``) to its track file under music_dir.
+
+    The track URL is extension-less (``/api/v1/music/calm``); this finds the
+    first ``calm.<ext>`` present, so dropping in ``calm.mp3`` just works. Refuses
+    traversal (the name must be a bare stem).
+    """
+    if not name or "/" in name or "\\" in name or "." in name:
+        return None
+    root = settings.music_dir.resolve()
+    for ext in _MUSIC_EXTS:
+        candidate = (root / f"{name}{ext}").resolve()
+        if (root == candidate or root in candidate.parents) and candidate.is_file():
+            return candidate
+    return None
+
+
 def _resolve_within(base: Path, relative_path: str | None) -> Path | None:
     """Resolve ``relative_path`` under ``base``, or None if empty/escaping."""
     if not relative_path:
@@ -130,6 +151,13 @@ def output_url(relative_path: str | None) -> str | None:
     if not relative_path:
         return None
     return f"/api/v1/outputs/{relative_path}"
+
+
+def music_url(mood: str | None) -> str | None:
+    """Storage-seam URL for a mood track (extension-less; resolver finds the file)."""
+    if not mood:
+        return None
+    return f"/api/v1/music/{mood}"
 
 
 def delete_file(relative_path: str | None) -> None:

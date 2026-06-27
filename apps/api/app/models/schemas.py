@@ -359,7 +359,8 @@ class ClipMusic(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    track_id: str | None = None
+    track_id: str | None = None  # mood key / provenance (e.g. "calm")
+    url: str | None = None  # resolved track URL (storage seam); None = no track
     enabled: bool = False
     gain_db: float = -18.0
 
