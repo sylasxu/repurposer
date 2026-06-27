@@ -60,6 +60,8 @@ export interface ClipBrand {
   caption_color?: string | null;
   caption_size?: number | null;
   caption_font?: string | null;
+  intro_text?: string | null;
+  outro_text?: string | null;
   fill_mode?: "fill" | "fit";
 }
 
@@ -85,13 +87,29 @@ export const ASPECT_DIMENSIONS: Record<Aspect, { width: number; height: number }
 /** Composition timeline fps (independent of the source's fps). */
 export const COMPOSITION_FPS = 30;
 
+/** Fixed durations (seconds) for brand intro/outro title cards. */
+export const INTRO_SECONDS = 2;
+export const OUTRO_SECONDS = 2;
+
+/** Intro card duration for this spec (0 when no brand intro text). */
+export const introSeconds = (spec: ClipSpec): number =>
+  spec.brand?.intro_text ? INTRO_SECONDS : 0;
+
+/** Outro card duration for this spec (0 when no brand outro text). */
+export const outroSeconds = (spec: ClipSpec): number =>
+  spec.brand?.outro_text ? OUTRO_SECONDS : 0;
+
 /** Non-hidden segments in order. */
 export const keptSegments = (spec: ClipSpec): ClipSegment[] =>
   spec.segments.filter((s) => !s.hidden);
 
-/** Total kept duration in seconds (>= a single frame). */
+/** Kept video duration in seconds (excludes intro/outro cards). */
+export const videoDurationSeconds = (spec: ClipSpec): number =>
+  keptSegments(spec).reduce((acc, s) => acc + Math.max(0, s.end - s.start), 0);
+
+/** Total clip duration: intro card + kept video + outro card (>= a frame). */
 export const totalDurationSeconds = (spec: ClipSpec): number => {
-  const total = keptSegments(spec).reduce((acc, s) => acc + Math.max(0, s.end - s.start), 0);
+  const total = introSeconds(spec) + videoDurationSeconds(spec) + outroSeconds(spec);
   return total > 0 ? total : 1 / COMPOSITION_FPS;
 };
 

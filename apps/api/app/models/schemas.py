@@ -380,6 +380,8 @@ class ClipBrand(BaseModel):
     caption_color: str | None = None  # hex; overrides the default white caption
     caption_size: int | None = None  # px; overrides the default caption size
     caption_font: str | None = None  # font key: lilita/inter/playfair/source-serif
+    intro_text: str | None = None  # opening title card (None = no intro)
+    outro_text: str | None = None  # closing title card (None = no outro)
     fill_mode: Literal["fill", "fit"] = "fill"  # video objectFit: cover / contain
 
 

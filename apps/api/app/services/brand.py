@@ -28,12 +28,17 @@ def brand_from_template(config: dict[str, Any] | None) -> ClipBrand:
     fill = cfg.get("fillMode")
     fill_mode: Literal["fill", "fit"] = "fit" if fill == "fit" else "fill"
 
+    intro = _clean("introText") if cfg.get("introEnabled") else None
+    outro = _clean("outroText") if cfg.get("outroEnabled") else None
+
     return ClipBrand(
         logo_url=_clean("logoUrl"),
         cta=_clean("cta"),
         caption_color=_clean("captionColor"),
         caption_size=caption_size,
         caption_font=_clean("captionFont"),
+        intro_text=intro,
+        outro_text=outro,
         fill_mode=fill_mode,
     )
 
