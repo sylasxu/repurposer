@@ -257,6 +257,8 @@ const zh = {
     captionStyle: "字幕样式",
     styleClean: "简洁底部",
     styleKaraoke: "逐词高亮",
+    captionLanguage: "字幕语言",
+    translating: "翻译中...",
     musicToggle: "配乐",
     titleToggle: "标题开关",
     titlePlaceholder: "标题 / Hook 文案",

@@ -31,6 +31,16 @@ import {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const WORDS_PER_LINE = 7
 
+// Caption target languages (European-market focus per product positioning).
+const CAPTION_LANGS: [string, string][] = [
+  ['en', 'English'],
+  ['fr', 'Français'],
+  ['de', 'Deutsch'],
+  ['es', 'Español'],
+  ['it', 'Italiano'],
+  ['zh', '中文'],
+]
+
 interface Clip {
   id: string
   hook: string
@@ -69,6 +79,7 @@ function ClipEditorPage() {
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [rendering, setRendering] = useState(false)
+  const [translating, setTranslating] = useState(false)
   const [error, setError] = useState('')
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [mounted, setMounted] = useState(false)
@@ -168,6 +179,33 @@ function ClipEditorPage() {
       setRendering(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Render failed')
+    }
+  }
+
+  const translateCaptions = async (lang: string) => {
+    // The endpoint re-translates the PERSISTED caption_track — save edits first.
+    if (!spec || lang === spec.target_language || translating) return
+    if (dirty && !(await save())) return
+    setTranslating(true)
+    setError('')
+    try {
+      const res = await fetch(`${API_URL}/api/v1/clips/${clipId}/translate-captions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_language: lang }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.detail || 'Translate failed')
+      }
+      const c: Clip = await res.json()
+      setClip(c)
+      if (c.render_spec) setSpec(c.render_spec)
+      setDirty(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Translate failed')
+    } finally {
+      setTranslating(false)
     }
   }
 
@@ -273,6 +311,33 @@ function ClipEditorPage() {
                   <SelectContent>
                     <SelectItem value="clean-bottom">{t('clipEditor.styleClean')}</SelectItem>
                     <SelectItem value="karaoke-highlight">{t('clipEditor.styleKaraoke')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">{t('clipEditor.captionLanguage')}</span>
+                <Select
+                  value={spec.target_language}
+                  onValueChange={(v) => translateCaptions(v ?? spec.target_language)}
+                  disabled={translating}
+                >
+                  <SelectTrigger className="h-9 w-36 rounded-md text-sm">
+                    {translating ? (
+                      <span className="flex items-center gap-2">
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        {t('clipEditor.translating')}
+                      </span>
+                    ) : (
+                      <SelectValue />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CAPTION_LANGS.map(([code, label]) => (
+                      <SelectItem key={code} value={code}>
+                        {label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </label>

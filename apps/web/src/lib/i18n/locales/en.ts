@@ -259,6 +259,8 @@ const en: Resources = {
     captionStyle: "Caption style",
     styleClean: "Clean bottom",
     styleKaraoke: "Word highlight",
+    captionLanguage: "Caption language",
+    translating: "Translating...",
     musicToggle: "Music",
     titleToggle: "Title toggle",
     titlePlaceholder: "Title / hook text",

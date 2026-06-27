@@ -418,6 +418,20 @@ class ClipUpdate(BaseModel):
     render_spec: ClipSpec | None = None
 
 
+class CaptionTranslation(BaseModel):
+    """LLM caption-translation result: translated lines, parallel to the input."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    lines: list[str] = Field(default_factory=list)
+
+
+class TranslateCaptionsRequest(BaseModel):
+    """Re-translate a clip's caption track into ``target_language``."""
+
+    target_language: str = Field(description="Target language code, e.g. en/fr/de/es/it")
+
+
 class DerivativeResponse(BaseModel):
     """Generated derivative (LinkedIn post, quote cards, …)."""
 

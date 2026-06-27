@@ -17,8 +17,10 @@ from app.models.schemas import (
     RenderStatus,
     Segment,
     SpeakerPersona,
+    TranslateCaptionsRequest,
 )
 from app.models.tables import Clip, HumanFeedback, Project, Speaker
+from app.services.caption_translate import translate_caption_track
 
 router = APIRouter()
 
@@ -179,6 +181,59 @@ async def render_clip(clip_id: UUID, db: DBDep) -> Clip:
         )
     clip.render_status = RenderStatus.PENDING
     clip.render_error = None
+    await db.commit()
+    await db.refresh(clip)
+    return clip
+
+
+@router.post("/{clip_id}/translate-captions", response_model=ClipResponse)
+async def translate_captions(
+    clip_id: UUID,
+    data: TranslateCaptionsRequest,
+    db: DBDep,
+) -> Clip:
+    """Re-translate the clip's caption track into ``target_language``.
+
+    Operates on the persisted ``render_spec``, so the editor saves pending edits
+    first. Stays word-level (see services.caption_translate) and updates the
+    spec's ``target_language`` in place.
+    """
+    result = await db.execute(select(Clip).where(Clip.id == clip_id))
+    clip = result.scalar_one_or_none()
+    if not clip:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Clip not found",
+        )
+
+    spec = clip.render_spec
+    if not isinstance(spec, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Clip has no render_spec (text-only project — no source video)",
+        )
+    track = spec.get("caption_track") or []
+    if not track:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Clip has no captions to translate",
+        )
+
+    try:
+        new_track = await translate_caption_track(track, data.target_language)
+    except MiniMaxError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(e),
+        ) from e
+
+    # Reassign a NEW dict so SQLAlchemy flushes the JSON column (no in-place mutation).
+    clip.render_spec = {
+        **spec,
+        "caption_track": new_track,
+        "target_language": data.target_language,
+    }
+    clip.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(clip)
     return clip
