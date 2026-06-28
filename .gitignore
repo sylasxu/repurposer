@@ -258,3 +258,8 @@ apps/api/data/uploads/*
 apps/api/data/outputs/*
 !apps/api/data/uploads/.gitkeep
 !apps/api/data/outputs/.gitkeep
+
+# Built-in mood music library (user supplies licensed tracks)
+data/music/*
+!data/music/.gitkeep
+!data/music/README.md

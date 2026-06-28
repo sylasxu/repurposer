@@ -25,15 +25,31 @@ class Settings(BaseSettings):
     # Storage
     upload_dir: Path = Path("./data/uploads")
     output_dir: Path = Path("./data/outputs")
+    music_dir: Path = Path("./data/music")  # built-in mood music library
 
     # API
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
+    # Background worker
+    worker_poll_interval: float = 2.0
+
+    # ASR (faster-whisper, self-hosted — EU/GDPR; CTranslate2, no torch)
+    asr_model: str = "base"  # tiny/base/small/medium/large-v3
+    asr_device: str = "cpu"  # cpu | cuda
+    asr_compute_type: str = "int8"  # int8 (cpu) | float16 (gpu)
+
+    # Video render service (Remotion, apps/render — black box: spec -> MP4+SRT)
+    render_url: str = "http://localhost:3001/render"
+    # Public base of this API, used to absolutize source URLs the render service
+    # fetches (clip-spec stores relative stream URLs via the storage seam).
+    api_public_url: str = "http://localhost:8000"
+
     def ensure_dirs(self) -> None:
         """Ensure storage directories exist."""
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.music_dir.mkdir(parents=True, exist_ok=True)
 
 
 settings = Settings()

@@ -19,6 +19,7 @@ dependencies = [
     "tenacity>=8.4",
     "structlog>=24.1",
     "psycopg2-binary>=2.9.12",
+    "faster-whisper>=1.2.1",
 ]
 
 [project.optional-dependencies]
@@ -32,7 +33,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-exclude = ["migrations/versions/*.py"]
+exclude = ["migrations/versions/*.py", "app/prompts/*.j2"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]

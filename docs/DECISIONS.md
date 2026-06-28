@@ -332,3 +332,90 @@ uv run alembic downgrade -1
 - `apps/api/app/models/database.py`（`init_db`）
 - `apps/api/app/models/tables.py`
 - `apps/api/pyproject.toml`
+
+## ADR-016：竖屏短片编辑器——钉死 clip-spec 契约，Remotion 作为第一渲染器（可替换黑盒）
+
+**状态**：已决策（详细设计见 [VIDEO_EDITOR.md](./VIDEO_EDITOR.md)）
+
+**背景**：「竖屏短片成片」确定为 MVP 必须项，且必须可编辑。需要在"自研 FFmpeg / Remotion / CapCut Web 客户端引擎"之间定型，并明确编辑能做到什么级别。
+
+**决策**：
+1. **钉死唯一契约：声明式 `clip-spec(JSON)`**（渲染器无关，只描述"是什么"：segment 列表 / 裁切 / 字幕轨 / 样式预设 / 标题 / 配乐 / 品牌）。渲染器是契约背后的**可替换实现**。
+2. **第一个渲染器用 Remotion**（服务端，无头 Chrome + 内部 FFmpeg），当作 `spec→MP4+SRT` 的**黑盒**；Node 渲染服务用 pnpm 启动、自托管 EU，由现有 Python 队列触发。
+3. **品类定位 = OpusClip 类**（服务端流水线 + 浏览器瘦编辑面 + 甩剪映精剪），**不做 CapCut Web 客户端引擎**。
+4. **编辑形态 = Descript 式文档编辑**：文字稿编辑（删句=剪段，非破坏性可恢复）+ 词↔时间码 + **单轨 trim**；**不做多轨 NLE / 图层合成 / 转场特效 / B-roll 库 / 自动人脸追踪**（L3，甩下游）。
+5. **样式限定在预设枚举**（CSS 与 libass 都能表达），保证"预览=成片"且保留将来换手搓 FFmpeg 的低成本。
+6. **ASR（词级时间戳）从可选 P1 升级为硬前置**；视频需**可流式播放/seek**（本地文件系统 + FastAPI Range 端点即可，**对象存储非必需**，按 ADR-011 留到规模化）。没有 ASR + 可播放视频，编辑器搭不起来。
+
+**原因**：
+- 我们的任务是"处理已有素材"，编辑需求最高只到"裁段+字幕+样式"，够不到多轨 NLE；自研 WASM 引擎是给不存在的需求付几年工程。
+- Remotion 让 parity（预览=成片）结构上天然成立、媒体脏活成熟、`<Player>` 直接当预览、契合 React 栈——对小团队是更快到精致 MVP 的路径。
+- 因为契约稳定，**低后悔**：将来账单/规模有压力可换手搓 FFmpeg（clip-spec→filtergraph + 两端共享 libass）或客户端 WebCodecs，spec 不动。
+
+**代价 / 注意**：
+- 引入一个 Node 渲染服务（多语言栈，但边界是干净黑盒）+ Remotion license（4+ 人 $25/seat 或 $0.01/render）。
+- "无头 Chrome 逐帧渲处理任务"较重，但 MVP 规模（短片）无碍，高量再优化或换手搓。
+- Python 没有 Remotion 等价物（web-tech parity 范式绑死 JS/浏览器）：要 parity 就接受 Node；坚持纯 Python 则落到 ffmpeg-python + 共享 libass 手搓（另一个范式）。
+
+**相关文件**：
+- `docs/VIDEO_EDITOR.md`
+- `apps/api/app/models/tables.py`（`Clip` 加 `render_spec/render_status/render_error/srt_url`）
+- `apps/api/app/worker.py`、`apps/api/app/services/jobs.py`（渲染认领源）
+- `.claude/projects/-Users-sylas-repurposer/memory/repurposer-video-editing-direction.md`
+
+## ADR-017：Postgres 当任务队列（不上 Redis），独立 worker 进程
+
+**状态**：已实施
+
+**背景**：ASR、视频渲染等是耗时重活；原先生成跑在 FastAPI `BackgroundTasks`（进程内、重启即丢、无重试、无并发控制），素材上传是同步阻塞。需要可靠的异步执行层。
+
+**决策**：
+1. **用 Postgres `FOR UPDATE SKIP LOCKED` 把数据库当队列**，**不引入 Redis/Celery**（符合 ADR-001 简单优先；将来横向扩展再换 arq/Celery 是一处替换）。
+2. 独立 **worker 进程**（`python -m app.worker`）轮询认领 `Asset`（待处理）和 `WorkflowRun`（待生成），与 API 进程物理隔离；启动 `reap_stale` 重置孤儿任务。
+3. `Asset` 加 `processing_status`(pending/processing/completed/failed) + `processing_error`；上传改为落盘即返回 pending，前端轮询。
+4. `app/services/asset_processing.py` 按类型分发 processor——**ASR/OCR 未来唯一接入点**（现 video/audio 为 no-op）。
+5. 生成统一走 `/generate` 的 outputs 多选（clips/linkedin/quote_cards/summary/blog），删除原先 4 个重复的同步生成端点。
+
+**原因**：
+- 内部验证阶段（ADR-012）的吞吐/规模还用不到 Redis；DB 当队列零新增中间件。
+- worker 进程隔离让重活不拖在线请求；`SKIP LOCKED` 支持多 worker 安全并发。
+
+**相关文件**：
+- `apps/api/app/worker.py`、`apps/api/app/services/jobs.py`、`apps/api/app/services/asset_processing.py`
+- `apps/api/app/models/tables.py`（`Asset.processing_status`）
+- `scripts/dev.sh`、`docker-compose.yml`（worker 进程，无 redis）
+- `.claude/projects/-Users-sylas-repurposer/memory/repurposer-queue-foundation.md`
+
+## ADR-018：渲染服务独立为 apps/render + 共享 packages/clip + pnpm workspace
+
+**状态**：已实施
+
+**背景**：Remotion 的 parity（预览=成片）要求 `<Clip>` 组件被 web 的 `<Player>`（预览）和渲染服务的 `renderMedia`（出片）**共用同一份**。需要决定渲染服务和这份共享组件放在仓库哪里，且不破坏 ADR-001 的运行时隔离。
+
+**决策**：
+1. **渲染服务独立为 `apps/render/`**（Node/pnpm，`@remotion/bundler` + `@remotion/renderer` + express），对外是 `POST /render: spec→MP4+SRT` 黑盒。**不放 `apps/api/` 下**（api 是 Python/uv，混运行时违反 ADR-001）。
+2. **`<Clip>` 组件 + clip-spec TS 类型抽到 `packages/clip/`** 共享包（`@repurposer/clip`），web 和 render 都 import。
+3. **用轻量 pnpm workspace**（`pnpm-workspace.yaml` 含 `apps/web`/`apps/render`/`packages/*`）串起三个 TS 包；**`apps/api` 独立用 uv，不进 workspace**。
+4. `onlyBuiltDependencies` 从 `apps/web` 移到 workspace 根。
+
+**原因**：
+- parity 要求组件共享 —— 这是选 Remotion 的全部理由，不能两边各写一份。
+- pnpm workspace 是**最轻的共享机制**（一个 yaml），不是 ADR-001 反对的 Turborepo/Nx/Bazel；这是对 ADR-001「无共享代码」前提的合理演进（现在确实有一份必须共享的 `<Clip>`）。
+- api 保持 Python/uv 完全隔离。
+
+**约束与注意**：
+- render 的 `spec.source.url` 必须是**绝对 URL**（api worker 调用前把存储 seam 的相对 URL 绝对化）。
+- render 把 MP4/SRT 写到共享 `data/outputs`，api 经 Range 端点服务（存储 seam）。
+- 首次渲染 Remotion 会下载无头 Chromium（约几百 MB）；个别原生依赖的 build script 可能需 `pnpm approve-builds`。
+- `<Clip>` MVP 渲染首个 kept 段；多段 concat（文字稿删句产生间隔）是后续扩展。
+
+**相关文件**：
+- `apps/render/`（`src/server.ts`/`render.ts`/`srt.ts`）、`packages/clip/`（`src/Clip.tsx`/`Root.tsx`/`types.ts`）
+- `pnpm-workspace.yaml`、`scripts/dev.sh`、`README.md`、`docs/VIDEO_EDITOR.md` §6
+
+**容器化（补充）**：
+- 全栈 5 服务都有 Dockerfile：`api`（uv，装 `libgomp1` 给 ctranslate2）、`worker`（复用 api 镜像换 `command`）、`render`、`web`。
+- **`render` / `web` 的构建上下文是仓库根**——它们 import workspace 包 `@repurposer/clip`，子目录上下文拿不到 `pnpm-workspace.yaml` / `pnpm-lock.yaml` / `packages/clip`。Dockerfile 先 COPY 各 workspace 的 `package.json`（pnpm 解析整图所需）+ lockfile 装依赖，再 COPY 源码，最大化层缓存。
+- `render` 镜像装无头 Chromium 的系统库（libnss3/libatk/libgbm/字体等）；Chromium 二进制在**首次渲染时惰性下载**（不在构建期拉，避免构建依赖外网、在 CI/受限网络上挂起；render 服务运行时本就有外网用于回拉源视频）。生产可在 Remotion 下载目录挂缓存卷避免重启重下。
+- 容器内服务名互联：`API_PUBLIC_URL=http://api:8000`、`RENDER_URL=http://render:3001/render`（覆盖 `config.py` 里的 localhost 默认）。render 写共享卷 `./data/outputs`，api 经 Range 端点服务。
+- **`web` 用 `vite preview` 起 SSR**：MVP/staging 够用；高流量再换围绕导出 fetch handler（`dist/server/server.js`）的轻量 node http 适配层。这是当前唯一未在容器里端到端跑通就交付的点。

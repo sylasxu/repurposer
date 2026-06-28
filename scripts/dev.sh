@@ -9,6 +9,15 @@ echo "Starting Repurposer development environment..."
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || { echo "Cannot cd to repo root ($ROOT)"; exit 1; }
 
+# Shared data dirs as ABSOLUTE paths so api / worker / render all read & write
+# the same place regardless of each process's cwd. (Otherwise the api, started
+# from apps/api, would look for rendered files under apps/api/data while the
+# render service, started from apps/render, writes to repo/data — a 404 trap.)
+export UPLOAD_DIR="$ROOT/data/uploads"
+export OUTPUT_DIR="$ROOT/data/outputs"
+export RENDER_OUTPUT_DIR="$ROOT/data/outputs"
+mkdir -p "$UPLOAD_DIR" "$OUTPUT_DIR"
+
 # --- helpers ---------------------------------------------------------------
 kill_port() {
   local port=$1 name=$2 pids
@@ -51,7 +60,7 @@ elif with_timeout 5 docker ps >/dev/null 2>&1; then
       -e POSTGRES_PASSWORD=postgres \
       -e POSTGRES_DB=repurposer \
       -p 5432:5432 \
-      postgres:16-alpine 2>/dev/null \
+      postgres:18-alpine 2>/dev/null \
       || docker start repurposer-db 2>/dev/null \
       || echo "Could not start Postgres container (continuing anyway)."
   fi
@@ -75,12 +84,26 @@ echo "Starting API on http://localhost:8000 ..."
 ( cd "$ROOT/apps/api" && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 ) &
 API_PID=$!
 
+# --- worker ----------------------------------------------------------------
+# Processes the Postgres-backed job queue (asset processing + generation) in a
+# separate process so heavy jobs don't compete with the API's online requests.
+echo "Starting background worker ..."
+( cd "$ROOT/apps/api" && uv run python -m app.worker ) &
+WORKER_PID=$!
+
+# --- render service --------------------------------------------------------
+# Remotion render service (clip-spec -> MP4+SRT). Node/pnpm, headless Chrome +
+# bundled FFmpeg. Black box the api worker calls; not needed for text-only flows.
+echo "Starting render service on http://localhost:3001 ..."
+( cd "$ROOT/apps/render" && pnpm dev ) &
+RENDER_PID=$!
+
 # --- frontend --------------------------------------------------------------
 echo "Starting web app on http://localhost:3000 ..."
 ( cd "$ROOT/apps/web" && pnpm dev ) &
 WEB_PID=$!
 
 # --- cleanup ---------------------------------------------------------------
-trap 'echo; echo "Shutting down..."; kill "$API_PID" "$WEB_PID" 2>/dev/null; exit' INT TERM
+trap 'echo; echo "Shutting down..."; kill "$API_PID" "$WORKER_PID" "$RENDER_PID" "$WEB_PID" 2>/dev/null; exit' INT TERM
 
 wait

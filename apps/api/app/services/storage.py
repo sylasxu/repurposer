@@ -74,16 +74,6 @@ def get_output_path(project_id: UUID, filename: str) -> Path:
     return directory / _sanitize_filename(filename)
 
 
-def get_relative_url(path: Path) -> str:
-    """Get relative URL for a stored file.
-
-    Note: returns a URL relative to the upload root. For files nested in
-    project/speaker directories, the name alone is not unique; callers should
-    use file IDs instead of names for public URLs.
-    """
-    return f"/files/{path.name}"
-
-
 async def save_upload(file_obj: BinaryIO, project_id: UUID, filename: str) -> str:
     """Save uploaded file to project storage and return relative path string."""
     destination = get_upload_path(project_id, filename)
@@ -105,6 +95,69 @@ def resolve_file_path(relative_path: str | None) -> Path | None:
     if not relative_path:
         return None
     return settings.upload_dir / relative_path
+
+
+def resolve_safe(relative_path: str | None) -> Path | None:
+    """Resolve a relative upload path, refusing traversal escapes (None if unsafe)."""
+    return _resolve_within(settings.upload_dir, relative_path)
+
+
+def resolve_output_safe(relative_path: str | None) -> Path | None:
+    """Resolve a relative output path (rendered MP4/SRT), refusing traversal."""
+    return _resolve_within(settings.output_dir, relative_path)
+
+
+# Audio extensions the built-in mood library may use, in resolution priority.
+_MUSIC_EXTS = (".mp3", ".m4a", ".aac", ".ogg", ".wav")
+
+
+def resolve_music_safe(name: str | None) -> Path | None:
+    """Resolve a mood name (e.g. ``calm``) to its track file under music_dir.
+
+    The track URL is extension-less (``/api/v1/music/calm``); this finds the
+    first ``calm.<ext>`` present, so dropping in ``calm.mp3`` just works. Refuses
+    traversal (the name must be a bare stem).
+    """
+    if not name or "/" in name or "\\" in name or "." in name:
+        return None
+    root = settings.music_dir.resolve()
+    for ext in _MUSIC_EXTS:
+        candidate = (root / f"{name}{ext}").resolve()
+        if (root == candidate or root in candidate.parents) and candidate.is_file():
+            return candidate
+    return None
+
+
+def _resolve_within(base: Path, relative_path: str | None) -> Path | None:
+    """Resolve ``relative_path`` under ``base``, or None if empty/escaping."""
+    if not relative_path:
+        return None
+    root = base.resolve()
+    candidate = (root / relative_path).resolve()
+    if root == candidate or root in candidate.parents:
+        return candidate
+    return None
+
+
+def stream_url(relative_path: str | None) -> str | None:
+    """Browser-playable URL for an uploaded file (storage seam; see VIDEO_EDITOR §5)."""
+    if not relative_path:
+        return None
+    return f"/api/v1/files/{relative_path}"
+
+
+def output_url(relative_path: str | None) -> str | None:
+    """Browser-playable URL for a rendered output (MP4/SRT) under output_dir."""
+    if not relative_path:
+        return None
+    return f"/api/v1/outputs/{relative_path}"
+
+
+def music_url(mood: str | None) -> str | None:
+    """Storage-seam URL for a mood track (extension-less; resolver finds the file)."""
+    if not mood:
+        return None
+    return f"/api/v1/music/{mood}"
 
 
 def delete_file(relative_path: str | None) -> None:

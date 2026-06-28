@@ -30,6 +30,7 @@ class AnalyzerAgent:
         materials: list[str],
         clip_count: int,
         event_name: str | None = None,
+        target_language: str = "en",
     ) -> ContentAnalysis:
         """Analyze materials and return high-potential segments.
 
@@ -37,6 +38,7 @@ class AnalyzerAgent:
             materials: Extracted text from project assets.
             clip_count: Number of segments to extract.
             event_name: Optional event name for context.
+            target_language: ISO language code for segment content (e.g. en/zh/fr).
 
         Returns:
             ContentAnalysis model.
@@ -55,6 +57,7 @@ class AnalyzerAgent:
             materials=trimmed_materials,
             clip_count=clip_count,
             event_name=event_name,
+            target_language=target_language,
         )
 
         messages = [
@@ -72,6 +75,7 @@ class AnalyzerAgent:
             "content_analysis_started",
             material_count=len(trimmed_materials),
             clip_count=clip_count,
+            target_language=target_language,
         )
 
         try:

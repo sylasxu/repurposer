@@ -234,3 +234,43 @@ class WorkflowStep(BaseModel):
 | 复杂 workflow | P2 评估 LangGraph 或 Pydantic AI |
 | 团队协作 | 新增 `organizations` / `members` 表和权限中间件 |
 | 社媒直接发布 | 新增 `routers/publish.py` 调用平台 API |
+
+## 9. 任务队列（已实施，ADR-017）
+
+耗时任务（ASR、视频渲染、生成）不跑在 API 进程，改由独立 worker 进程处理。**用 Postgres 当队列，不上 Redis。**
+
+```
+┌──────────┐  上传/生成 创建 pending 行  ┌─────────────┐
+│ FastAPI   │ ─────────────────────────► │ PostgreSQL   │
+│ (API 进程) │                            │ Asset/Run 行 │
+└──────────┘                            └──────┬──────┘
+                                               │ FOR UPDATE SKIP LOCKED 认领
+┌──────────────────────┐                       ▼
+│ worker 进程           │ ◄─────────────────────┘
+│ python -m app.worker  │  process_asset / run_generation
+│ 与 API 物理隔离        │  失败落 *_error，循环不崩
+└──────────────────────┘
+```
+
+- `app/services/jobs.py`：`claim_pending_*`（原子认领）+ `reap_stale`（启动重置孤儿任务）。
+- `app/services/asset_processing.py`：按 `AssetType` 分发的 processor——**ASR/OCR/视频渲染未来的接入点**。
+- 将来横向扩展再把认领换成 arq/Celery + Redis，调用方不变。
+
+## 10. 视频编辑与渲染架构（ADR-016，详见 VIDEO_EDITOR.md）
+
+「竖屏短片成片 + 可编辑」是 MVP 主流程。架构核心 = **钉死一份声明式 `clip-spec(JSON)` 契约，渲染器是契约背后的可替换黑盒**。
+
+```
+clip-spec(JSON)  ← 永久契约（渲染器无关）
+     │
+     ├──► 预览：Remotion <Player>（浏览器实时渲染，编辑器画布）
+     └──► 出片：Remotion 渲染服务(Node, 无头 Chrome + 内部 FFmpeg)
+                └─ Python 队列(§9)触发 → MP4 + SRT
+```
+
+- **第一个渲染器 = Remotion**（服务端），当 `spec→MP4+SRT` 黑盒；pnpm 启动、自托管 EU。
+- **品类 = OpusClip 类**（服务端流水线 + 瘦编辑面 + 甩剪映精剪），编辑形态抄 Descript（文字稿编辑 / 删句=剪段非破坏性 / 单轨 trim），**不做多轨 NLE / 图层 / 特效 / 客户端引擎**。
+- **硬前置**：多语 ASR（词级时间戳）+ 可流式播放/seek 的视频（**本地 FS + Range 端点即可**；对象存储留到规模化，ADR-011）。
+- **低后悔**：spec 稳定，将来可换手搓 FFmpeg（+ 两端共享 libass）或客户端 WebCodecs，契约不变。
+
+> 媒体处理层（第 2 节抽象图里的"视频渲染引擎"）由此具体化为：**本地存储 + Range 流式端点 + ASR + clip-spec + Remotion 渲染服务**（对象存储留规模化）。

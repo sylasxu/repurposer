@@ -11,22 +11,35 @@ import structlog
 from sqlalchemy import delete, select
 
 from app.agents.analyzer import analyzer_agent
+from app.agents.blog import blog_agent
 from app.agents.linkedin import linkedin_agent
 from app.agents.quote_card import quote_card_agent
 from app.agents.script import script_agent
+from app.agents.summary import summary_agent
 from app.models.database import AsyncSessionLocal
 from app.models.schemas import (
+    AssetType,
     DerivativeType,
     ProjectStatus,
     SpeakerPersona,
     ToneSettings,
     WorkflowStatus,
 )
-from app.models.tables import Asset, Clip, Derivative, Project, Speaker, WorkflowRun
+from app.models.tables import (
+    Asset,
+    BrandTemplate,
+    Clip,
+    Derivative,
+    Project,
+    Speaker,
+    WorkflowRun,
+)
+from app.services.brand import brand_from_template, music_from_template
+from app.services.clip_spec import build_clip_spec
 
 logger = structlog.get_logger()
 
-KNOWN_OUTPUTS = ("clips", "linkedin", "quote_cards")
+KNOWN_OUTPUTS = ("clips", "linkedin", "quote_cards", "summary", "blog")
 
 
 async def run_generation(run_id: UUID) -> None:
@@ -64,13 +77,29 @@ async def run_generation(run_id: UUID) -> None:
             asset_rows = await db.execute(
                 select(Asset).where(Asset.project_id == project.id)
             )
+            assets = list(asset_rows.scalars().all())
             materials = [
                 text
-                for a in asset_rows.scalars().all()
+                for a in assets
                 if (text := (a.extracted_text or a.transcript))
             ]
             if not materials:
                 raise ValueError("No source material to analyze")
+
+            # Source video (with ASR word timestamps) to render clips from;
+            # None for text/audio-only projects -> clips carry no render_spec.
+            # (Audio-only clips need a different composition — waveform/still +
+            # captions — not OffthreadVideo; deferred.)
+            source_av = next(
+                (
+                    a
+                    for a in assets
+                    if a.type == AssetType.VIDEO
+                    and a.file_url
+                    and (a.meta or {}).get("words")
+                ),
+                None,
+            )
 
             persona = (
                 SpeakerPersona.model_validate(speaker.persona)
@@ -96,6 +125,20 @@ async def run_generation(run_id: UUID) -> None:
                         Derivative.type == DerivativeType.QUOTE_CARD,
                     )
                 )
+            if "summary" in outputs:
+                await db.execute(
+                    delete(Derivative).where(
+                        Derivative.project_id == project.id,
+                        Derivative.type == DerivativeType.SUMMARY,
+                    )
+                )
+            if "blog" in outputs:
+                await db.execute(
+                    delete(Derivative).where(
+                        Derivative.project_id == project.id,
+                        Derivative.type == DerivativeType.BLOG,
+                    )
+                )
             await db.commit()
 
             total = len(outputs)
@@ -108,13 +151,41 @@ async def run_generation(run_id: UUID) -> None:
                     materials=materials,
                     clip_count=clip_count,
                     event_name=project.event_name,
+                    target_language=target_language,
                 )
+                # Bake the latest brand template into each clip's render_spec so
+                # the renderer/preview show it without DB access (see ADR-016).
+                bt = (
+                    await db.execute(
+                        select(BrandTemplate)
+                        .order_by(BrandTemplate.created_at.desc())
+                        .limit(1)
+                    )
+                ).scalar_one_or_none()
+                brand = brand_from_template(bt.config) if bt is not None else None
+                music = music_from_template(bt.config) if bt is not None else None
+                brand_ref = bt.id if bt is not None else None
                 for segment in analysis.segments[:clip_count]:
                     script = await script_agent.generate(
                         segment=segment,
                         persona=persona,
                         tone_settings=tone_settings,
                         target_audience=analysis.target_audience,
+                        target_language=target_language,
+                    )
+                    # render_spec = the actual render contract (None for
+                    # text-only projects). script stays as the AI suggestion.
+                    spec = (
+                        build_clip_spec(
+                            source_av,
+                            segment,
+                            target_language,
+                            brand=brand,
+                            music=music,
+                            brand_ref=brand_ref,
+                        )
+                        if source_av is not None
+                        else None
                     )
                     db.add(
                         Clip(
@@ -126,6 +197,7 @@ async def run_generation(run_id: UUID) -> None:
                             duration=script.duration_seconds,
                             language=target_language,
                             source_segment=segment.model_dump(),
+                            render_spec=spec.model_dump(mode="json") if spec else None,
                         )
                     )
                 await db.commit()
@@ -171,6 +243,50 @@ async def run_generation(run_id: UUID) -> None:
                         project_id=project.id,
                         type=DerivativeType.QUOTE_CARD,
                         content=result.model_dump(),
+                        language=target_language,
+                    )
+                )
+                await db.commit()
+                done += 1
+                run.progress = int(done / total * 100)
+                await db.commit()
+
+            if "summary" in outputs:
+                run.current_step = "summary"
+                await db.commit()
+                summary = await summary_agent.generate(
+                    materials=materials,
+                    persona=persona,
+                    event_name=project.event_name,
+                    target_language=target_language,
+                )
+                db.add(
+                    Derivative(
+                        project_id=project.id,
+                        type=DerivativeType.SUMMARY,
+                        content=summary.model_dump(),
+                        language=target_language,
+                    )
+                )
+                await db.commit()
+                done += 1
+                run.progress = int(done / total * 100)
+                await db.commit()
+
+            if "blog" in outputs:
+                run.current_step = "blog"
+                await db.commit()
+                blog = await blog_agent.generate(
+                    materials=materials,
+                    persona=persona,
+                    event_name=project.event_name,
+                    target_language=target_language,
+                )
+                db.add(
+                    Derivative(
+                        project_id=project.id,
+                        type=DerivativeType.BLOG,
+                        content=blog.model_dump(),
                         language=target_language,
                     )
                 )

@@ -177,6 +177,25 @@ TanStack Router 对 `to` 是字面量类型约束。动态参数必须写成：
 - 设置项包括字体、主色、强调色、Logo、默认 CTA、语言调性；预览实时反映到 quote card 与 LinkedIn post 样例卡片。
 - 新增设置项时同步扩展 `brandTemplate.*` i18n key。
 
+## 视频编辑器与渲染（竖屏短片）
+
+> 详细方案见 `docs/VIDEO_EDITOR.md` 与 ADR-016。这里是协作时必须遵守的约束。
+
+- **clip-spec(JSON) 是唯一契约**，渲染器是它背后的**可替换黑盒**。**不要把 Remotion/React 概念泄进 clip-spec**——它只描述"是什么"（segment/裁切/字幕轨/样式预设/标题/配乐/品牌），保持渲染器无关。
+- **第一个渲染器是 Remotion**（服务端，无头 Chrome + 内部 FFmpeg），用 **pnpm** 起独立 Node 渲染服务，当 `spec→MP4+SRT` 黑盒，由 Python 队列触发。**别把 Remotion 逻辑塞进 Python 后端**。
+- **编辑形态**：文字稿编辑（删句=剪段，**非破坏性**：标 `hidden` 不真删）+ **单轨 trim**；预览用 Remotion `<Player>`（同一份组件既预览又渲染）。
+- **范围纪律（关键）**：**不要**加多轨时间轴 / 图层合成 / 转场特效 / B-roll 库 / 自动人脸 reframe / 客户端引擎——这些是 L3，明确甩给剪映/Premiere。字幕样式走**预设枚举**，不开放自由排版。
+- **样式守在"CSS 与 libass 都能表达"的子集**，保留将来换手搓 FFmpeg（clip-spec→filtergraph + 两端共享 libass）的低成本。
+- 硬前置：**多语 ASR（词级时间戳）+ 可流式播放/seek 的视频**（**本地 FS + FastAPI Range 端点即可**；对象存储留到规模化，ADR-011）。
+
+## 任务队列（后端）
+
+> 详见 ADR-017。
+
+- 耗时任务（ASR / 视频渲染 / 生成）一律进 **worker 进程**（`python -m app.worker`），**不要用 FastAPI `BackgroundTasks`**。
+- 新增重活：把 processor 插进 `app/services/asset_processing.py` 的 `PROCESSORS`，或在 worker 加认领源（如 `Clip.render_status`）。
+- 用 **Postgres `FOR UPDATE SKIP LOCKED`** 当队列，**不引入 Redis/Celery**（横向扩展时再换，调用方不变）。
+
 ## 提交信息
 - 使用 conventional commits，例如：
   - `feat: add theme toggle with view transition`
