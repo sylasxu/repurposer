@@ -29,6 +29,7 @@ class ScriptAgent:
         persona: SpeakerPersona | None,
         tone_settings: ToneSettings | None,
         target_audience: str,
+        target_language: str = "en",
     ) -> ClipScript:
         """Generate a clip script for a segment.
 
@@ -37,6 +38,7 @@ class ScriptAgent:
             persona: Speaker style persona.
             tone_settings: Optional tone overrides.
             target_audience: Target audience description.
+            target_language: ISO language code for hook/subtitles (e.g. en/zh/fr).
 
         Returns:
             ClipScript model.
@@ -48,6 +50,7 @@ class ScriptAgent:
             segment=segment,
             persona=persona,
             target_audience=target_audience,
+            target_language=target_language,
             duration_seconds=segment.duration_seconds,
             academic_vs_casual=tone.academic_vs_casual,
             rational_vs_passionate=tone.rational_vs_passionate,

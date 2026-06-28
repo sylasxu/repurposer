@@ -151,6 +151,7 @@ async def run_generation(run_id: UUID) -> None:
                     materials=materials,
                     clip_count=clip_count,
                     event_name=project.event_name,
+                    target_language=target_language,
                 )
                 # Bake the latest brand template into each clip's render_spec so
                 # the renderer/preview show it without DB access (see ADR-016).
@@ -170,6 +171,7 @@ async def run_generation(run_id: UUID) -> None:
                         persona=persona,
                         tone_settings=tone_settings,
                         target_audience=analysis.target_audience,
+                        target_language=target_language,
                     )
                     # render_spec = the actual render contract (None for
                     # text-only projects). script stays as the AI suggestion.
