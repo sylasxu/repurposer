@@ -88,20 +88,53 @@ async def run_generation(run_id: UUID) -> None:
             if not materials:
                 raise ValueError("No source material to analyze")
 
-            # Source video (with ASR word timestamps) to render clips from;
-            # None for text/audio-only projects -> clips carry no render_spec.
-            # (Audio-only clips need a different composition — waveform/still +
-            # captions — not OffthreadVideo; deferred.)
-            source_av = next(
+            # Render source selection (docs/VIDEO_EDITOR.md §4), in priority:
+            #   1. on-camera VIDEO (with ASR words)      -> video clip
+            #   2. else speech AUDIO (with ASR words)    -> stills audiogram
+            #   3. else any backing visual (slides/image) -> stills, no audio
+            # None of the above -> clips carry no render_spec (text assets only).
+            # Backing visuals = rendered slide-deck pages first (the talk's own
+            # narrative), then uploaded photos.
+            def _has_words(a: Asset) -> bool:
+                return bool(a.file_url and (a.meta or {}).get("words"))
+
+            slide_page_urls = [
+                u
+                for a in assets
+                if a.type == AssetType.SLIDES
+                for p in (a.slide_pages or [])
+                if (u := stream_url(p))
+            ]
+            image_urls = [
+                u
+                for a in assets
+                if a.type == AssetType.IMAGE and (u := stream_url(a.file_url))
+            ]
+            still_images = slide_page_urls + image_urls
+            source_video = next(
+                (a for a in assets if a.type == AssetType.VIDEO and _has_words(a)),
+                None,
+            )
+            source_audio = next(
+                (a for a in assets if a.type == AssetType.AUDIO and _has_words(a)),
+                None,
+            )
+            first_visual = next(
                 (
                     a
                     for a in assets
-                    if a.type == AssetType.VIDEO
-                    and a.file_url
-                    and (a.meta or {}).get("words")
+                    if a.type in (AssetType.SLIDES, AssetType.IMAGE) and a.file_url
                 ),
                 None,
             )
+            if source_video is not None:
+                render_source, render_kind = source_video, "video"
+            elif source_audio is not None:
+                render_source, render_kind = source_audio, "stills"
+            elif first_visual is not None and still_images:
+                render_source, render_kind = first_visual, "stills"
+            else:
+                render_source, render_kind = None, "video"
 
             persona = (
                 SpeakerPersona.model_validate(speaker.persona)
@@ -186,14 +219,16 @@ async def run_generation(run_id: UUID) -> None:
                     # text-only projects). script stays as the AI suggestion.
                     spec = (
                         build_clip_spec(
-                            source_av,
+                            render_source,
                             segment,
                             target_language,
+                            kind=render_kind,
+                            image_urls=still_images if render_kind == "stills" else None,
                             brand=brand,
                             music=music,
                             brand_ref=brand_ref,
                         )
-                        if source_av is not None
+                        if render_source is not None
                         else None
                     )
                     db.add(

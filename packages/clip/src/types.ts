@@ -11,10 +11,26 @@ export type Aspect = "9:16" | "1:1";
 
 export type CaptionStylePreset = "clean-bottom" | "karaoke-highlight";
 
+/**
+ * What backs the clip's visual: a real on-camera video, or a "stills" audiogram
+ * (image[s] + optional speech audio). Absent on old specs -> treated as "video".
+ */
+export type SourceKind = "video" | "stills";
+
 export interface ClipSource {
   asset_id: string;
-  /** Browser-playable URL via the storage seam (api Range endpoint or S3). */
+  /** "video" (default) or "stills" (image-backed audiogram). */
+  kind?: SourceKind;
+  /**
+   * Browser-playable URL via the storage seam (api Range endpoint or S3).
+   * video: the video file. stills: the optional speech audio ("" when none).
+   */
   url: string;
+  /**
+   * stills only: ordered backing images. 0 -> solid background; 1 -> full-frame
+   * for the whole clip; N -> even hard-cut slideshow across the duration.
+   */
+  image_urls?: string[];
   fps: number;
   /** Source length in seconds (trim slider upper bound); optional for old specs. */
   duration?: number | null;

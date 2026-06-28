@@ -42,6 +42,14 @@ function groupLines(cues: CaptionCue[]): CaptionCue[][] {
   return lines;
 }
 
+/** Split `total` frames into `count` even chunks (last chunk absorbs remainder). */
+function splitFrames(count: number, total: number): number[] {
+  const base = Math.max(1, Math.floor(total / count));
+  return Array.from({ length: count }, (_, i) =>
+    i === count - 1 ? Math.max(1, total - base * (count - 1)) : base,
+  );
+}
+
 export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -85,6 +93,15 @@ export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
   const sourceTime = current ? current.seg.start + (localOutput - current.outStart) : 0;
   const hasSource = Boolean(spec.source.url && timeline.length > 0);
 
+  // "stills" audiogram: image[s] backing + optional speech audio. The visual is
+  // an even hard-cut slideshow of the images (1 -> full-frame); empty -> the
+  // outer black fill shows through. Audio (when present) is sliced to the kept
+  // segments exactly like video, so caption mapping is unchanged.
+  const isStills = spec.source.kind === "stills";
+  const images = spec.source.image_urls ?? [];
+  const audioUrl = spec.source.url || null;
+  const imageDurs = images.length > 0 ? splitFrames(images.length, videoFrames) : [];
+
   const lines = groupLines(spec.caption_track);
   const activeLine =
     lines.find((line) => sourceTime >= line[0].start && sourceTime <= line[line.length - 1].end) ??
@@ -102,7 +119,34 @@ export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       {musicUrl ? <Audio src={musicUrl} volume={musicVolume} loop /> : null}
 
-      {hasSource ? (
+      {isStills ? (
+        <Sequence from={introFrames} durationInFrames={videoFrames} layout="none">
+          {images.length > 0 ? (
+            <AbsoluteFill>
+              <Series>
+                {images.map((src, i) => (
+                  <Series.Sequence key={i} durationInFrames={imageDurs[i]}>
+                    <Img src={src} style={{ width: "100%", height: "100%", objectFit }} />
+                  </Series.Sequence>
+                ))}
+              </Series>
+            </AbsoluteFill>
+          ) : null}
+          {audioUrl && timeline.length > 0 ? (
+            <Series>
+              {timeline.map((t, i) => (
+                <Series.Sequence key={i} durationInFrames={Math.max(1, Math.round(t.dur * fpsv))}>
+                  <Audio
+                    src={audioUrl}
+                    startFrom={Math.round(t.seg.start * fpsv)}
+                    endAt={Math.round(t.seg.end * fpsv)}
+                  />
+                </Series.Sequence>
+              ))}
+            </Series>
+          ) : null}
+        </Sequence>
+      ) : hasSource ? (
         <Sequence from={introFrames} durationInFrames={videoFrames} layout="none">
           <AbsoluteFill
             style={{

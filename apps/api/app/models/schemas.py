@@ -321,12 +321,18 @@ class RenderStatus(StrEnum):
 
 
 class ClipSource(BaseModel):
-    """Source video for a clip."""
+    """Source backing a clip: an on-camera video, or a "stills" audiogram."""
 
     model_config = ConfigDict(extra="forbid")
 
     asset_id: UUID
-    url: str  # browser-playable URL via storage.stream_url() (storage seam)
+    kind: Literal["video", "stills"] = "video"
+    # browser-playable URL via storage.stream_url() (storage seam).
+    # video: the video file. stills: the optional speech audio ("" when none).
+    url: str = ""
+    # stills only: ordered backing images (0 -> solid bg, 1 -> full-frame,
+    # N -> even hard-cut slideshow across the duration).
+    image_urls: list[str] = Field(default_factory=list)
     fps: int = 30
     duration: float | None = None  # source length (seconds) — trim slider bound
 

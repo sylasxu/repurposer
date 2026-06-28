@@ -376,7 +376,17 @@ function ProjectDetailPage() {
     return () => clearInterval(timer)
   }, [assetsPending, id])
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
+  // Map an uploaded file to its backend AssetType. Voice samples are never
+  // inferred (voice cloning isn't built yet — don't promise it).
+  const inferAssetType = (file: File): string => {
+    const m = file.type
+    if (m.startsWith('video/')) return 'video'
+    if (m.startsWith('audio/')) return 'audio'
+    if (m.startsWith('image/')) return 'image'
+    return 'transcript' // pdf / txt / md / unknown -> text extraction
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type?: string) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
@@ -384,7 +394,7 @@ function ProjectDetailPage() {
     setMessage('')
     try {
       const formData = new FormData()
-      formData.append('type', type)
+      formData.append('type', type ?? inferAssetType(file))
       formData.append('file', file)
       const res = await fetch(`${API_URL}/api/v1/projects/${id}/assets`, {
         method: 'POST',
@@ -741,9 +751,9 @@ function ProjectDetailPage() {
             {uploading ? t('projectDetail.uploading') : t('projectDetail.uploadTranscript')}
             <input
               type="file"
-              onChange={(e) => handleFileUpload(e, 'transcript')}
+              onChange={(e) => handleFileUpload(e)}
               disabled={uploading}
-              accept=".txt,.md,.pdf"
+              accept=".txt,.md,.pdf,video/*,audio/*,image/*"
               className="hidden"
             />
           </label>

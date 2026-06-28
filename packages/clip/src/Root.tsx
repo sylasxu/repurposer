@@ -10,7 +10,7 @@ import {
 
 /** A minimal valid spec for Remotion's required defaultProps / studio preview. */
 export const DEFAULT_SPEC: ClipSpec = {
-  source: { asset_id: "", url: "", fps: 30 },
+  source: { asset_id: "", kind: "video", url: "", fps: 30, image_urls: [] },
   aspect: "9:16",
   segments: [{ start: 0, end: 1, hidden: false }],
   crop: { x: 0.5, y: 0.5, scale: 1 },

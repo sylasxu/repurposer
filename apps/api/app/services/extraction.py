@@ -65,3 +65,50 @@ def _extract_pdf(file_path: Path) -> str | None:
         if text:
             pages.append(text)
     return "\n\n".join(pages) if pages else None
+
+
+def render_pdf_pages(
+    file_path: FilePath,
+    out_dir: Path,
+    *,
+    max_pages: int = 20,
+    target_width: int = 1080,
+) -> list[Path]:
+    """Render PDF pages to PNGs in ``out_dir``; return the written page paths.
+
+    Used to turn a slide deck into backing visuals for a "stills" clip. Capped at
+    ``max_pages`` (logged when truncated — no silent cap). Empty list on any error
+    or if PyMuPDF is unavailable; the caller falls back to text-only slides.
+    """
+    path = Path(file_path)
+    if not path.is_absolute():
+        path = settings.upload_dir / path
+    if path.suffix.lower() != ".pdf":
+        return []
+
+    try:
+        import pymupdf  # PyMuPDF; renders pages without system deps
+    except ImportError as e:
+        logger.error("pymupdf_not_installed", error=str(e))
+        return []
+
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        written: list[Path] = []
+        with pymupdf.open(str(path)) as doc:
+            total = doc.page_count
+            if total > max_pages:
+                logger.warning(
+                    "pdf_pages_truncated", path=str(path), total=total, kept=max_pages
+                )
+            for i in range(min(total, max_pages)):
+                page = doc.load_page(i)
+                zoom = target_width / page.rect.width if page.rect.width else 1.0
+                pixmap = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
+                dest = out_dir / f"page-{i + 1:03d}.png"
+                pixmap.save(str(dest))
+                written.append(dest)
+        return written
+    except Exception as e:
+        logger.error("pdf_render_failed", path=str(path), error=str(e))
+        return []

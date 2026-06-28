@@ -26,6 +26,9 @@ from app.models.schemas import (
 from app.models.tables import Asset
 from app.services.storage import stream_url
 
+# Seconds each backing image holds in a no-audio "stills" slideshow.
+SECS_PER_IMAGE = 4.0
+
 
 def _norm(text: str) -> list[str]:
     """Lowercased alphanumeric word tokens, for marker matching."""
@@ -85,18 +88,70 @@ def build_clip_spec(
     segment: Segment,
     target_language: str,
     *,
+    kind: str = "video",
+    image_urls: list[str] | None = None,
     brand: ClipBrand | None = None,
     music: ClipMusic | None = None,
     brand_ref: Any = None,
 ) -> ClipSpec | None:
-    """Build a render-ready clip-spec, or None if the source can't be rendered."""
+    """Build a render-ready clip-spec, or None if the source can't be rendered.
+
+    ``kind="video"``: ``source`` is an on-camera VIDEO asset (with ASR words).
+    ``kind="stills"``: an audiogram — ``image_urls`` back the visual and
+    ``source`` is either a speech AUDIO asset (ASR words -> captions + audio
+    track) or, when there's no recording, the primary IMAGE asset (no audio, a
+    fixed-length slideshow sized by the image count).
+    """
+    images = image_urls or []
+
+    if kind == "stills":
+        words: list[dict[str, Any]] = cast("dict[str, Any]", source.meta or {}).get(
+            "words", []
+        )
+        audio_url = stream_url(source.file_url)
+        if words and audio_url:
+            # Audio-backed: captions + speech track sliced to the located span.
+            start, end = locate_span(words, segment)
+            caption_track = [
+                CaptionCue(
+                    start=float(w["start"]),
+                    end=float(w["end"]),
+                    text=str(w["word"]).strip(),
+                    lang=target_language,
+                )
+                for w in words
+                if start <= float(w["start"]) and float(w["end"]) <= end + 0.05
+            ]
+            url, duration = audio_url, (
+                float(source.duration_seconds) if source.duration_seconds else None
+            )
+        else:
+            # No recording: a fixed-length slideshow (no per-word captions).
+            start, end = 0.0, float(max(1, len(images)) * SECS_PER_IMAGE)
+            caption_track = []
+            url, duration = "", end
+        return ClipSpec(
+            source=ClipSource(
+                asset_id=source.id,
+                kind="stills",
+                url=url,
+                image_urls=images,
+                duration=duration,
+            ),
+            segments=[ClipSegment(start=start, end=end)],
+            caption_track=caption_track,
+            title=ClipTitle(text=segment.hook or "", enabled=bool(segment.hook)),
+            target_language=target_language,
+            brand=brand,
+            music=music or ClipMusic(),
+            brand_ref=brand_ref,
+        )
+
     url = stream_url(source.file_url)
     if url is None:
         return None
 
-    words: list[dict[str, Any]] = cast("dict[str, Any]", source.meta or {}).get(
-        "words", []
-    )
+    words = cast("dict[str, Any]", source.meta or {}).get("words", [])
     start, end = locate_span(words, segment)
 
     caption_track = [

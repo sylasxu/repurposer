@@ -445,3 +445,39 @@ uv run alembic downgrade -1
 - `apps/api/app/services/brand.py`（`music_from_template`）
 - `packages/clip/src/Clip.tsx`（`<Audio>`）
 - `data/music/README.md`
+
+## ADR-020：成片支持第二种 source kind —— "stills" 图片音频图
+
+**状态**：已实施
+
+**背景**：MVP 头号输出"竖屏精彩片段"原本只在有真人出镜 VIDEO 时才出片，纯音频演讲
+（播客/圆桌）和只有图片+要点的演讲全都出不了任何视频。而 Headliner / Typito / Canva
+等常见工具其实把 **图片 + 可选音频 + 文字** 组合成竖屏视频（audiogram），是一个连贯且
+常见的格式。
+
+**决策**：给 clip-spec 的 `ClipSource` 加判别字段，渲染器二分，video 路径完全不变（向后兼容）：
+1. `kind: "video" | "stills"`（默认 `"video"`）。
+2. `stills` 时 `image_urls: list[str]` 作垫底视觉（0→纯色 / 1→满屏 / N→按时长均分**硬切**轮播），
+   `url` 复用为**可选**语音轨（无录音为 `""`）。
+3. 有音频则复用 ASR 词级 `caption_track` + 语音轨；无音频则固定时长幻灯片
+   （每图 `SECS_PER_IMAGE=4s`，后端写一个合成 segment 定时长）。
+4. 生成时选源优先级：VIDEO → AUDIO → IMAGE；都没有则仍 `render_spec=None`（只出文本资产）。
+
+**范围边界（守 L2）**：只做单轨硬切静图 + 现有逐词字幕 + title/logo/CTA/配乐/片头尾。
+**不做**（L3 或后续）：图间转场/交叉淡入、Ken-Burns 平移缩放、多句 kinetic-typography
+动画文字轨、B-roll 库、单图自由排版、波形动画。
+
+**原因**：
+- 复用已建的 ASR（字幕时间轴）+ 品牌/配乐/片头尾渲染路径，零新增重依赖。
+- 契约描述"是什么"——"这条片由图片+可选音频构成"是合法的"是什么"，未来手搓 FFmpeg
+  渲染器同样需要这个判别字段，不是渲染器泄漏。
+- `<Clip>` 同一组件既预览又出片，stills 复用 `<Sequence>/<Series>/<Img>/<Audio>` 原语。
+
+**相关文件**：
+- `packages/clip/src/types.ts`（`ClipSource.kind` / `image_urls`）、`Clip.tsx`（kind 二分 + `splitFrames`）、`Root.tsx`（默认 spec）
+- `apps/api/app/models/schemas.py`（`ClipSource`）、`services/clip_spec.py`（`build_clip_spec` stills 分支 + `SECS_PER_IMAGE`）
+- `apps/api/app/services/generation.py`（选源优先级 VIDEO→AUDIO→IMAGE）、`services/rendering.py`（`_absolutize` 处理 `image_urls`）
+- `apps/web/src/routes/projects.$id.tsx`（上传按 MIME 推断类型，从不推断 voice_sample）
+
+**未覆盖**：语音克隆配音仍未实现（独立阶段）；无头 Chromium 单帧渲染冒烟未在本轮跑通
+（stills 复用 video 路径同款 Remotion 原语，静态 + 单元层已验证）。

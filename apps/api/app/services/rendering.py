@@ -26,9 +26,16 @@ logger = structlog.get_logger()
 def _absolutize(spec: dict[str, Any]) -> dict[str, Any]:
     """Make storage-relative URLs absolute so the render service can fetch them."""
     base = settings.api_public_url.rstrip("/")
-    url = spec.get("source", {}).get("url", "")
+    src = spec.get("source", {})
+    url = src.get("url", "")
     if url.startswith("/"):
-        spec["source"]["url"] = base + url
+        src["url"] = base + url
+    # stills: backing image URLs are storage-relative too.
+    images = src.get("image_urls")
+    if isinstance(images, list):
+        src["image_urls"] = [
+            base + u if isinstance(u, str) and u.startswith("/") else u for u in images
+        ]
     # Brand logo may be a relative storage URL too (usually an external absolute
     # URL, in which case this is a no-op).
     brand = spec.get("brand")

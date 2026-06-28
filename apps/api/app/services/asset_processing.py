@@ -20,8 +20,12 @@ import structlog
 from app.models.database import AsyncSessionLocal
 from app.models.schemas import AssetStatus, AssetType
 from app.models.tables import Asset
-from app.services.extraction import extract_text
-from app.services.storage import resolve_file_path
+from app.services.extraction import extract_text, render_pdf_pages
+from app.services.storage import (
+    _relative_path,
+    get_project_upload_dir,
+    resolve_file_path,
+)
 
 logger = structlog.get_logger()
 
@@ -33,6 +37,7 @@ class ProcessResult:
     extracted_text: str | None = None
     transcript: str | None = None
     duration_seconds: int | None = None
+    slide_pages: list[str] | None = None  # relative paths to rendered PDF pages
     meta: dict[str, Any] = field(default_factory=dict)
 
 
@@ -46,6 +51,19 @@ def _extract_text_processor(asset: Asset) -> ProcessResult:
     if not asset.file_url:
         return ProcessResult()
     return ProcessResult(extracted_text=extract_text(asset.file_url))
+
+
+def _slides_processor(asset: Asset) -> ProcessResult:
+    """Slides: extract text AND render PDF pages to images (stills backing)."""
+    if not asset.file_url:
+        return ProcessResult()
+    text = extract_text(asset.file_url)
+    slide_pages: list[str] | None = None
+    if asset.file_url.lower().endswith(".pdf"):
+        out_dir = get_project_upload_dir(asset.project_id) / f"slides-{asset.id}"
+        pages = render_pdf_pages(asset.file_url, out_dir)
+        slide_pages = [_relative_path(p) for p in pages] or None
+    return ProcessResult(extracted_text=text, slide_pages=slide_pages)
 
 
 def _asr_processor(asset: Asset) -> ProcessResult:
@@ -73,7 +91,7 @@ def _noop_processor(asset: Asset) -> ProcessResult:
 PROCESSORS: dict[AssetType, Processor] = {
     AssetType.TRANSCRIPT: _extract_text_processor,
     AssetType.PAST_MATERIAL: _extract_text_processor,
-    AssetType.SLIDES: _extract_text_processor,  # PDF text for now; OCR later
+    AssetType.SLIDES: _slides_processor,  # PDF text + per-page render
     AssetType.VIDEO: _asr_processor,
     AssetType.AUDIO: _asr_processor,
     AssetType.VOICE_SAMPLE: _noop_processor,
@@ -103,6 +121,8 @@ async def process_asset(asset_id: UUID) -> None:
                 asset.transcript = result.transcript
             if result.duration_seconds is not None:
                 asset.duration_seconds = result.duration_seconds
+            if result.slide_pages is not None:
+                asset.slide_pages = result.slide_pages
             if result.meta:
                 asset.meta = result.meta
             asset.processed_at = datetime.now(UTC)

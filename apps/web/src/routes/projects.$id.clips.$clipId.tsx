@@ -60,6 +60,17 @@ function withAbsoluteSource(spec: ClipSpec): ClipSpec {
   if (url && url.startsWith('/')) {
     next = { ...next, source: { ...next.source, url: API_URL + url } }
   }
+  // stills: backing images are storage-relative too.
+  const images = next.source.image_urls
+  if (images && images.some((u) => u.startsWith('/'))) {
+    next = {
+      ...next,
+      source: {
+        ...next.source,
+        image_urls: images.map((u) => (u.startsWith('/') ? API_URL + u : u)),
+      },
+    }
+  }
   // Brand logo may also be a relative storage URL (external URLs are untouched).
   const logo = next.brand?.logo_url
   if (logo && logo.startsWith('/')) {
