@@ -45,6 +45,9 @@ async def stream_music(mood: str) -> FileResponse:
             detail="Music track not found",
         )
     return FileResponse(path)
+
+
+@router.get("/outputs/{file_path:path}")
 async def stream_output(file_path: str) -> FileResponse:
     """Stream a rendered output (MP4/SRT) by relative path, with Range support."""
     path = resolve_output_safe(file_path)
