@@ -83,8 +83,18 @@ def _asr_processor(asset: Asset) -> ProcessResult:
     )
 
 
+def _image_processor(asset: Asset) -> ProcessResult:
+    """Extract key-points from an image via M3 vision (-> extracted_text)."""
+    path = resolve_file_path(asset.file_url)
+    if path is None or not path.is_file():
+        return ProcessResult()
+    from app.services.vision import describe_image  # lazy: network call
+
+    return ProcessResult(extracted_text=describe_image(path))
+
+
 def _noop_processor(asset: Asset) -> ProcessResult:
-    """Placeholder for types with no processor yet (voice samples, images)."""
+    """Placeholder for types with no processor yet (voice samples)."""
     return ProcessResult()
 
 
@@ -95,7 +105,7 @@ PROCESSORS: dict[AssetType, Processor] = {
     AssetType.VIDEO: _asr_processor,
     AssetType.AUDIO: _asr_processor,
     AssetType.VOICE_SAMPLE: _noop_processor,
-    AssetType.IMAGE: _noop_processor,
+    AssetType.IMAGE: _image_processor,  # M3 vision -> extracted_text
 }
 
 
