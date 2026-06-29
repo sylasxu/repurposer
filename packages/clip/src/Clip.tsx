@@ -3,13 +3,14 @@ import {
   AbsoluteFill,
   Audio,
   Img,
+  interpolate,
   OffthreadVideo,
   Sequence,
   Series,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import type { CaptionCue, ClipSpec } from "./types";
+import type { CaptionCue, ClipSpec, Point } from "./types";
 import {
   COMPOSITION_FPS,
   introSeconds,
@@ -18,6 +19,22 @@ import {
   videoDurationSeconds,
 } from "./types";
 import { fontFamilyFor } from "./fonts";
+
+/** Normalized center point -> absolute-position style (CSS translate / libass \pos). */
+function pointStyle(p: Point | null | undefined, fallback: Point): React.CSSProperties {
+  const pt = p ?? fallback;
+  return {
+    position: "absolute",
+    left: `${pt.x * 100}%`,
+    top: `${pt.y * 100}%`,
+    transform: "translate(-50%, -50%)",
+    width: "84%",
+  };
+}
+
+const DEFAULT_TITLE_POS: Point = { x: 0.5, y: 0.12 };
+const DEFAULT_CAPTION_POS: Point = { x: 0.5, y: 0.84 };
+const DEFAULT_CTA_POS: Point = { x: 0.5, y: 0.92 };
 
 /**
  * The single source of truth for how a clip looks — consumed by BOTH the
@@ -207,17 +224,19 @@ export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
       {inVideo && spec.title.enabled && spec.title.text ? (
         <div
           style={{
-            position: "absolute",
-            top: 80,
-            left: 48,
-            right: 48,
             textAlign: "center",
             color: "#ffffff",
             fontFamily: "sans-serif",
-            fontSize: 58,
+            fontSize: spec.title.size || 58,
             fontWeight: 800,
             lineHeight: 1.15,
             textShadow: "0 2px 12px rgba(0,0,0,0.7)",
+            // Fade in over ~0.4s once the video portion starts (libass \fad).
+            opacity: interpolate(frame, [introFrames, introFrames + 12], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            }),
+            ...pointStyle(spec.title.position, DEFAULT_TITLE_POS),
           }}
         >
           {spec.title.text}
@@ -227,10 +246,6 @@ export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
       {inVideo && activeLine.length > 0 ? (
         <div
           style={{
-            position: "absolute",
-            bottom: 220,
-            left: 60,
-            right: 60,
             textAlign: "center",
             fontFamily: captionFont,
             fontSize: captionSize,
@@ -239,6 +254,7 @@ export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
             color: captionColor,
             WebkitTextStroke: "2px rgba(0,0,0,0.55)",
             textShadow: "0 2px 10px rgba(0,0,0,0.6)",
+            ...pointStyle(spec.caption_position, DEFAULT_CAPTION_POS),
           }}
         >
           {activeLine.map((cue, i) => {
@@ -256,16 +272,13 @@ export const Clip: React.FC<{ spec: ClipSpec }> = ({ spec }) => {
       {inVideo && brand?.cta ? (
         <div
           style={{
-            position: "absolute",
-            bottom: 96,
-            left: 60,
-            right: 60,
             textAlign: "center",
             fontFamily: "sans-serif",
             fontSize: 34,
             fontWeight: 700,
             color: "#ffffff",
             textShadow: "0 2px 10px rgba(0,0,0,0.7)",
+            ...pointStyle(brand.cta_position, DEFAULT_CTA_POS),
           }}
         >
           <span

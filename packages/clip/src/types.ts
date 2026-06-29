@@ -60,6 +60,16 @@ export interface CaptionCue {
 export interface ClipTitle {
   text: string;
   enabled: boolean;
+  /** Font size in composition px (renderer scales). Null -> renderer default. */
+  size?: number | null;
+  /** Normalized center point (CSS translate / libass \pos). Null -> default. */
+  position?: Point | null;
+}
+
+/** Normalized center point in [0,1] of the composition (CSS + libass \pos expressible). */
+export interface Point {
+  x: number;
+  y: number;
 }
 
 export interface ClipMusic {
@@ -73,6 +83,8 @@ export interface ClipMusic {
 export interface ClipBrand {
   logo_url?: string | null;
   cta?: string | null;
+  /** Normalized center point of the CTA. Null -> default (bottom). */
+  cta_position?: Point | null;
   caption_color?: string | null;
   caption_size?: number | null;
   caption_font?: string | null;
@@ -88,6 +100,8 @@ export interface ClipSpec {
   crop: ClipCrop;
   caption_track: CaptionCue[];
   caption_style_preset: CaptionStylePreset;
+  /** Normalized center point of the caption block. Null -> default (bottom). */
+  caption_position?: Point | null;
   title: ClipTitle;
   music: ClipMusic;
   brand?: ClipBrand | null;
