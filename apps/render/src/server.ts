@@ -30,8 +30,13 @@ app.post("/render", async (req, res) => {
     basename?: string;
   };
 
-  if (!spec?.source?.url) {
-    res.status(400).json({ error: "spec.source.url required (absolute URL)" });
+  const src = spec?.source;
+  // Renderable if: video/stills with a media URL, or stills with backing images
+  // (a no-audio slideshow has url="" and relies on image_urls).
+  const renderable =
+    src && (src.kind === "stills" ? (src.image_urls?.length ?? 0) > 0 || !!src.url : !!src.url);
+  if (!renderable) {
+    res.status(400).json({ error: "spec.source needs a url (video/audio) or image_urls (stills)" });
     return;
   }
 
