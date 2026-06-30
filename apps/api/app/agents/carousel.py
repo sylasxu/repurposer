@@ -33,6 +33,7 @@ class CarouselAgent:
         event_name: str | None = None,
         count: int = 6,
         target_language: str = "en",
+        instruction: str | None = None,
     ) -> CarouselResponse:
         """Generate a carousel from speech materials.
 
@@ -64,6 +65,7 @@ class CarouselAgent:
             event_name=event_name,
             count=count,
             target_language=target_language,
+            instruction=(instruction or "").strip() or None,
         )
 
         messages = [

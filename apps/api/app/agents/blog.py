@@ -31,6 +31,7 @@ class BlogAgent:
         persona: SpeakerPersona | None,
         event_name: str | None = None,
         target_language: str = "en",
+        instruction: str | None = None,
     ) -> BlogPost:
         """Generate a title + markdown blog post in the target language."""
         if not materials:
@@ -48,6 +49,7 @@ class BlogAgent:
             persona=persona,
             event_name=event_name,
             target_language=target_language,
+            instruction=(instruction or "").strip() or None,
         )
 
         messages = [

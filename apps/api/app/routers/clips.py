@@ -276,7 +276,14 @@ async def dub_clip(clip_id: UUID, data: DubRequest, db: DBDep) -> Clip:
     )
     sample = (
         next((a for a in assets if a.type == AssetType.VOICE_SAMPLE and a.file_url), None)
-        or next((a for a in assets if a.type == AssetType.AUDIO and a.file_url), None)
+        or next(
+            (
+                a
+                for a in assets
+                if a.type == AssetType.AUDIO and a.file_url and (a.meta or {}).get("words")
+            ),
+            None,
+        )
         or next((a for a in assets if a.type == AssetType.VIDEO and a.file_url), None)
     )
     if sample is None:

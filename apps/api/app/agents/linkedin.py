@@ -31,6 +31,7 @@ class LinkedInAgent:
         persona: SpeakerPersona | None,
         event_name: str | None = None,
         target_language: str = "en",
+        instruction: str | None = None,
     ) -> LinkedInPost:
         """Generate a LinkedIn post.
 
@@ -58,6 +59,7 @@ class LinkedInAgent:
             persona=persona,
             event_name=event_name,
             target_language=target_language,
+            instruction=(instruction or "").strip() or None,
         )
 
         messages = [

@@ -7,6 +7,7 @@ future EU-local MiniMax deployment handles residency.
 """
 
 import binascii
+import os
 import tempfile
 import uuid
 from pathlib import Path
@@ -118,7 +119,9 @@ def extract_audio(video_path: Path) -> Path | None:
     except ImportError:
         return None
     try:
-        out = Path(tempfile.mkstemp(suffix=".wav")[1])
+        fd, tmp_name = tempfile.mkstemp(suffix=".wav")
+        os.close(fd)  # close the handle so the file is deletable later
+        out = Path(tmp_name)
         with av.open(str(video_path)) as inp:
             astream = next((s for s in inp.streams if s.type == "audio"), None)
             if astream is None:

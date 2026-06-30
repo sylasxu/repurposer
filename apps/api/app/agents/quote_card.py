@@ -33,6 +33,7 @@ class QuoteCardAgent:
         event_name: str | None = None,
         count: int = 3,
         target_language: str = "en",
+        instruction: str | None = None,
     ) -> QuoteCardsResponse:
         """Generate quote cards.
 
@@ -64,6 +65,7 @@ class QuoteCardAgent:
             event_name=event_name,
             count=count,
             target_language=target_language,
+            instruction=(instruction or "").strip() or None,
         )
 
         messages = [

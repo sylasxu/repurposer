@@ -31,6 +31,7 @@ class SummaryAgent:
         persona: SpeakerPersona | None,
         event_name: str | None = None,
         target_language: str = "en",
+        instruction: str | None = None,
     ) -> Summary:
         """Generate a TL;DR + key points + full summary in the target language."""
         if not materials:
@@ -48,6 +49,7 @@ class SummaryAgent:
             persona=persona,
             event_name=event_name,
             target_language=target_language,
+            instruction=(instruction or "").strip() or None,
         )
 
         messages = [

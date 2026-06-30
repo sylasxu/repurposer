@@ -289,6 +289,7 @@ async def run_generation(run_id: UUID) -> None:
                     persona=persona,
                     event_name=project.event_name,
                     target_language=target_language,
+                    instruction=instruction,
                 )
                 db.add(
                     Derivative(
@@ -313,6 +314,7 @@ async def run_generation(run_id: UUID) -> None:
                     event_name=project.event_name,
                     count=3,
                     target_language=target_language,
+                    instruction=instruction,
                 )
                 db.add(
                     Derivative(
@@ -337,6 +339,7 @@ async def run_generation(run_id: UUID) -> None:
                     event_name=project.event_name,
                     count=6,
                     target_language=target_language,
+                    instruction=instruction,
                 )
                 db.add(
                     Derivative(
@@ -359,6 +362,7 @@ async def run_generation(run_id: UUID) -> None:
                     persona=persona,
                     event_name=project.event_name,
                     target_language=target_language,
+                    instruction=instruction,
                 )
                 db.add(
                     Derivative(
@@ -381,6 +385,7 @@ async def run_generation(run_id: UUID) -> None:
                     persona=persona,
                     event_name=project.event_name,
                     target_language=target_language,
+                    instruction=instruction,
                 )
                 db.add(
                     Derivative(
