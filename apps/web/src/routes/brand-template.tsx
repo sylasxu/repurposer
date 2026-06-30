@@ -485,8 +485,8 @@ function BrandTemplatePage() {
           className="flex shrink-0 gap-3 overflow-hidden p-4"
         >
           {/* Section list */}
-          <div className="w-[240px] shrink-0 overflow-y-auto">
-            <div className="overflow-hidden rounded-xl bg-card ring-1 ring-border">
+          <div className="w-[244px] shrink-0 overflow-y-auto p-1">
+            <div className="overflow-hidden rounded-lg bg-card ring-1 ring-border">
               <div className="border-b px-4 py-3">
                 <h2 className="font-semibold">{t("brandTemplate.setting")}</h2>
               </div>
@@ -535,9 +535,9 @@ function BrandTemplatePage() {
           </div>
 
           {/* Section detail */}
-          <div className="w-[320px] shrink-0 overflow-y-auto">
-            <Card className="ring-1 ring-border">
-              <CardContent className="p-4">
+          <div className="w-[324px] shrink-0 overflow-y-auto p-1">
+            <Card className="rounded-lg ring-1 ring-border">
+              <CardContent className="px-4">
                 <TabsContent value="clipLayout" className="space-y-4">
                   <Field label={t("brandTemplate.clipLayout.aspect")}>
                     <ToggleGroup

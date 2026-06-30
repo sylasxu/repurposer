@@ -81,6 +81,10 @@ function withAbsoluteSource(spec: ClipSpec): ClipSpec {
   if (track && track.startsWith('/')) {
     next = { ...next, music: { ...next.music, url: API_URL + track } }
   }
+  // Dubbed-voice track is storage-relative too.
+  if (next.dub?.url && next.dub.url.startsWith('/')) {
+    next = { ...next, dub: { ...next.dub, url: API_URL + next.dub.url } }
+  }
   return next
 }
 
@@ -398,7 +402,7 @@ function ClipEditorPage() {
                 <Select
                   value={spec.dub?.enabled ? spec.target_language : ''}
                   onValueChange={(v) => v && dubClip(v)}
-                  disabled={dubbing}
+                  disabled={dubbing || !spec.source.url}
                 >
                   <SelectTrigger className="h-9 w-36 rounded-md text-sm">
                     {dubbing ? (
