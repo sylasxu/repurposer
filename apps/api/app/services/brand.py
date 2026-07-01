@@ -10,9 +10,10 @@ from typing import Any, Literal
 
 from sqlalchemy import func, select
 
+from app.dependencies.auth import DEFAULT_USER_EMAIL, DEFAULT_USER_ID
 from app.models.database import AsyncSessionLocal
 from app.models.schemas import ClipBrand, ClipMusic
-from app.models.tables import BrandTemplate
+from app.models.tables import BrandTemplate, User
 from app.services.storage import music_url
 
 # Seeded when the DB has no brand templates so generation/preview always have a
@@ -40,14 +41,37 @@ DEFAULT_BRAND_CONFIG: dict[str, Any] = {
 
 
 async def seed_default_brand_template() -> None:
-    """Insert a default brand template if none exist (idempotent)."""
+    """Insert a default brand template for the default user if none exist."""
     async with AsyncSessionLocal() as db:
+        # Ensure the seeded default user exists.
+        result = await db.execute(select(User).where(User.email == DEFAULT_USER_EMAIL))
+        user = result.scalar_one_or_none()
+        if user is None:
+            user = User(
+                id=DEFAULT_USER_ID,
+                email=DEFAULT_USER_EMAIL,
+                name="Default User",
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+
         count = (
-            await db.execute(select(func.count()).select_from(BrandTemplate))
+            await db.execute(
+                select(func.count())
+                .select_from(BrandTemplate)
+                .where(BrandTemplate.user_id == user.id)
+            )
         ).scalar_one()
         if count and count > 0:
             return
-        db.add(BrandTemplate(name="Default", config=DEFAULT_BRAND_CONFIG))
+        db.add(
+            BrandTemplate(
+                name="Default",
+                user_id=user.id,
+                config=DEFAULT_BRAND_CONFIG,
+            )
+        )
         await db.commit()
 
 
