@@ -1,861 +1,864 @@
-# PRD：演讲内容智能 Repurposing 平台
+# PRD: Intelligent Talk Repurposing Platform
 
-## 1. 文档信息
+## 1. Document Information
 
-| 项目 | 内容 |
+| Item | Content |
 |:---|:---|
-| 文档版本 | v0.3（欧洲版） |
-| 撰写日期 | 2026/06/24 |
-| 产品名称 | 待定（内部代号：SpeechRepurposer） |
-| 目标读者 | 产品经理、技术负责人、设计师、左总、欧洲市场团队 |
-| 状态 | Draft |
+| Document Version | v0.3 (Europe Edition) |
+| Date | 2026/06/24 |
+| Product Name | TBD (internal codename: SpeechRepurposer) |
+| Target Audience | Product managers, tech leads, designers, Zuo, European market team |
+| Status | Draft |
 
 ---
 
-## 2. 产品概述
+## 2. Product Overview
 
-### 2.1 一句话描述
+### 2.1 One-Liner
 
-把一场演讲的原始素材（视频、音频、文字稿、幻灯片、照片）自动转化为适合 LinkedIn、机构官网、邮件 Newsletter 传播的高质量知识资产，包括 LinkedIn 长帖、多语言摘要、金句卡、竖屏短片，并保持演讲者本人的口吻与风格。
+Transform raw talk materials (video, audio, transcript, slides, photos) into high-quality knowledge assets for LinkedIn, institutional websites, and email newsletters — including LinkedIn long-form posts, multi-language summaries, quote cards, and vertical clips — while preserving the speaker's voice and style.
 
-### 2.2 愿景
+### 2.2 Vision
 
-让思想领袖、专家学者、企业高管能够**零剪辑基础**地把自己的**演讲、播客、网络研讨会或访谈**，一键变成可在 LinkedIn、机构官网、邮件 Newsletter 上分发的高质量知识资产——且全程保持本人的观点、风格与口吻。
+Enable thought leaders, subject-matter experts, and executives to **zero-edit** their **talks, podcasts, webinars, or interviews** into high-quality knowledge assets for LinkedIn, institutional websites, and email newsletters — with their viewpoints, style, and voice intact throughout.
 
-### 2.3 核心价值主张
+### 2.3 Core Value Proposition
 
-| 痛点 | 解决方案 |
+| Pain Point | Solution |
 |:---|:---|
-| 演讲内容很珍贵，但会后 90% 沉睡 | AI 自动分析全场演讲逻辑，提取高传播潜力片段 |
-| 人工剪辑短视频成本高、周期长 | Agent 工作流自动策划脚本 + 自评修正 + 人工审校闭环 |
-| 多语言适配成本高 | M3 原生多语言，一键生成 5 种欧洲语言版本 |
-| 代运营写不出本人风格 | 基于过往材料（书、文章、旧演讲）学习 Speaker 口吻 |
-| 不知道哪段内容适合传播 | AI 按传播潜力评分并推荐，自动生成 3 个备选 Hook |
-| 欧洲机构采购顾虑数据安全 | 可选 EU 数据驻留（Cast AI Kimchi），GDPR 合规 |
+| Talk content is valuable but 90% goes dormant after the event | AI automatically analyzes the full talk, extracting high-virality-potential segments |
+| Manual short-form video editing is costly and slow | Agent workflow auto-scripts, self-reviews, and corrects, with a human review loop |
+| Multi-language adaptation is expensive | M3 native multi-language, one-click generation for 5 European languages |
+| Ghostwriters can't capture the speaker's voice | Learns speaker voice from past materials (books, articles, old talks) |
+| Unclear which segments are shareable | AI scores by virality potential and recommends, auto-generating 3 alternative hooks |
+| European institutions worry about data security | Optional EU data residency (Cast AI Kimchi), GDPR compliant |
 
 ---
 
-## 3. 背景与问题
+## 3. Background & Problem
 
-### 3.1 欧洲市场背景
+### 3.1 European Market Context
 
-- **欧洲 LinkedIn 用户超 2 亿**，德国/英国/荷兰知识型内容活跃度全球前列，是 B2B 知识传播的核心阵地
-- **欧洲每年 3,000+ 学术会议**，数万场企业峰会，演讲内容会后 repurposing 渗透率 < 5%
-- **OpusClip/Descript 在欧洲的盲区**：核心用户是网红/播客，对学术/技术内容理解浅，且在美国处理数据，被欧洲机构采购排除
-- **多语言是入场门票**：欧洲 24 种官方语言，一场英语演讲没有法语/德语/西班牙语版等于只触达 30% 受众
-- **GDPR 是销售核武器**：73% 欧洲企业缺乏 AI 治理结构，64% Fortune 500 在欧洲运营的公司面临 AI 合规压力；数据跨境传输的法律风险（Schrems II）使 US 云处理的 AI 工具在欧洲受监管行业采购中处于劣势
+- **Over 200 million LinkedIn users in Europe**, with Germany, UK, and Netherlands ranking among the top globally for knowledge-content engagement — the core B2B knowledge distribution channel
+- **3,000+ academic conferences per year in Europe**, tens of thousands of corporate summits, with post-event repurposing penetration < 5%
+- **OpusClip/Descript blind spots in Europe**: Core users are influencers/podcasters, shallow understanding of academic/technical content, and US-based data processing excludes them from European institutional procurement
+- **Multi-language is the entry ticket**: 24 official languages in Europe; an English talk without French/German/Spanish versions reaches only 30% of the audience
+- **GDPR is a sales weapon**: 73% of European enterprises lack AI governance structures, 64% of Fortune 500 companies operating in Europe face AI compliance pressure; legal risks of cross-border data transfers (Schrems II) put US cloud-processed AI tools at a disadvantage in regulated European procurement
 
-### 3.2 关键洞察
+### 3.2 Key Insight
 
-> **SpeechRepurposer 在欧洲不是"又一个 OpusClip"，而是"唯一懂学术演讲、会讲 5 种欧洲语言、且数据可留在欧盟的 AI 知识资产化工具"。**
+> **SpeechRepurposer is not "another OpusClip" in Europe — it's the only AI knowledge-assetization tool that understands academic talks, speaks 5 European languages natively, and can keep data in the EU.**
 
-- **核心阵地是 LinkedIn + 机构官网 + 邮件 Newsletter**，不是 TikTok/抖音
-- **产品定位从"剪短视频"改成"知识资产化"**：LinkedIn 长帖 + 多语言摘要 + 金句卡 + 竖屏短片（可选）
-- **多语言提前到 P0**：中英 + 德/法/西/意，M3 原生翻译，不用第三方 API
-- **EU 数据驻留作为高阶版差异化**：通过 Cast AI Kimchi 提供 GDPR 合规 + 可选 EU 数据驻留
+- **Core channels are LinkedIn + institutional websites + email newsletters**, not TikTok/Douyin
+- **Product positioning shifts from "clip short videos" to "knowledge assetization"**: LinkedIn long-form posts + multi-language summaries + quote cards + vertical clips (optional)
+- **Multi-language is elevated to P0**: Chinese/English + German/French/Spanish/Italian, M3 native translation, no third-party API
+- **EU data residency as a premium differentiator**: GDPR compliance + optional EU data residency via Cast AI Kimchi
 
-### 3.3 用户痛点
+### 3.3 User Pain Points
 
-1. **剪辑门槛高**：教授/专家不会用剪辑软件，助理剪辑耗时
-2. **内容提炼难**：不知道 1 小时演讲里哪 30 秒值得剪
-3. **风格一致性差**：代运营写的文案不像本人
-4. **多语言成本高**：想把内容出海，但配音翻译成本贵
-5. **平台适配繁琐**：同一内容要手动改尺寸、改字幕样式、改文案长度
+1. **High editing barrier**: Professors/experts can't use editing software, assistants spend too much time editing
+2. **Hard to extract content**: Unclear which 30 seconds of a 1-hour talk are worth clipping
+3. **Inconsistent style**: Ghostwritten copy doesn't sound like the speaker
+4. **High multi-language cost**: Want to take content overseas, but dubbing/translation is expensive
+5. **Tedious platform adaptation**: Same content needs manual resizing, subtitle restyling, and copy length adjustments
 
-### 3.4 竞品分析
+### 3.4 Competitive Analysis
 
-#### 竞争格局（欧洲视角）
+#### Competitive Landscape (European Perspective)
 
-| 竞品 | 定位 | 欧洲弱点 | 我们的优势 |
+| Competitor | Positioning | Weakness in Europe | Our Advantage |
 |:---|:---|:---|:---|
-| **OpusClip** | 长视频 → 批量 viral 片段 | 对学术内容理解浅；20-40% 片段需丢弃；美国数据处理 | M3 1M 上下文理解整场逻辑；Agent 闭环修正；EU 数据驻留 |
-| **Descript / Underlord** | 文本驱动型音视频编辑 | 创意编辑需人工；社交文案偏泛；美国数据处理 | 基于 Speaker 过往材料学习风格；多语言原生；EU 部署 |
-| **InVideo** | 提示词 → 完整视频 | 从零生成，不基于已有演讲；AI 脚本偏泛 | 深度理解演讲内容 + 过往材料；保持本人风格 |
-| **欧洲本地工具** | 如 Lumen5、Pictory | 能力有限，不支持多语言原生；无 Agent 闭环 | M3 能力碾压；多语言；Agent 自评修正 |
+| **OpusClip** | Long video → batch viral clips | Shallow understanding of academic content; 20-40% of clips need discarding; US data processing | M3 1M context understands full talk logic; Agent closed-loop correction; EU data residency |
+| **Descript / Underlord** | Text-driven audio/video editing | Creative editing requires manual work; social copy is generic; US data processing | Learns style from speaker's past materials; native multi-language; EU deployment |
+| **InVideo** | Prompt → complete video | Generates from scratch, not based on existing talks; AI scripts are generic | Deep understanding of talk content + past materials; maintains speaker's voice |
+| **European Local Tools** | e.g. Lumen5, Pictory | Limited capabilities, no native multi-language support; no Agent loop | M3 capability advantage; multi-language; Agent self-review correction |
 
 #### OpusClip
 
-**定位**：长视频 → 批量短视频片段，面向播客主、网红、营销团队。
+**Positioning**: Long video → batch short-form viral clips, targeting podcasters, influencers, and marketing teams.
 
-**核心 UX 流程**：
+**Core UX Flow**:
 
 ```
-上传视频 → 配置参数 → AI 处理生成片段 → 按 Virality Score 排序 → 审校预览 → 导出/发布
+Upload video → Configure parameters → AI generates clips → Sort by Virality Score → Review preview → Export/publish
 ```
 
-**值得借鉴的功能**：
+**Notable Features**:
 
-| 功能 | 说明 | 借鉴价值 |
+| Feature | Description | Borrow Value |
 |:---|:---|:---|
-| **AI 精选片段** | 自动提取 5-10 个 viral 潜力片段 | 高，我们同样需要自动切片 |
-| **Virality Score™** | 0-100 分预测爆款潜力 | 高，可改为"传播潜力分" |
-| **自动转竖屏** | 9:16 带人物追踪 | 中，P1 加 |
-| **动态字幕** | 关键词高亮、emoji | 中，P0 可简化 |
-| **AI Hook** | 自动生成前 3 秒标题 | 高，P0 必做 |
-| **自然语言筛选** | "找出讨论定价策略的片段" | 中，P1 加 |
+| **AI Highlight Clips** | Auto-extracts 5-10 viral-potential clips | High — we also need auto-segmentation |
+| **Virality Score™** | 0-100 score predicting viral potential | High — can adapt to "virality potential score" |
+| **Auto Vertical** | 9:16 with face tracking | Medium — add in P1 |
+| **Dynamic Subtitles** | Keyword highlighting, emoji | Medium — can simplify in P0 |
+| **AI Hook** | Auto-generates first 3-second title | High — must-have in P0 |
+| **Natural Language Filter** | "Find segments discussing pricing strategy" | Medium — add in P1 |
 
-**局限性**：20-40% 的 AI 片段需要丢弃；对复杂叙事、学术内容理解浅；创意控制力弱。
+**Limitations**: 20-40% of AI clips need discarding; shallow understanding of complex narratives and academic content; weak creative control.
 
 #### Descript / Underlord
 
-**定位**：文本驱动型音视频编辑器 + AI 协作者，面向播客、访谈、知识型内容。
+**Positioning**: Text-driven audio/video editor + AI collaborator, targeting podcasts, interviews, and knowledge content.
 
-**核心 UX 流程**：
+**Core UX Flow**:
 
 ```
-上传音视频 → 自动转录文字稿 → 自然语言下指令 → AI 执行多步编辑 → 审校初稿 → 文本精修
+Upload audio/video → Auto-transcribe to text → Natural language instructions → AI executes multi-step edits → Review draft → Text refinement
 ```
 
-**值得借鉴的功能**：
+**Notable Features**:
 
-| 功能 | 说明 | 借鉴价值 |
+| Feature | Description | Borrow Value |
 |:---|:---|:---|
-| **文本编辑视频** | 改文字稿 = 改视频 | 高，P1 做字幕级编辑 |
-| **Underlord AI 助手** | 自然语言执行多步编辑任务 | 中，我们可类似做"重新生成" |
-| **语气词/停顿清理** | 一键删除 um/uh/长停顿 | 低，非核心需求 |
-| **Show Notes / 章节标记** | 自动生成节目描述 | 中，可生成 LinkedIn 长帖 |
-| **多语言翻译配音** | 30+ 语言带口型同步 | 中，P2 做 |
-| **Overdub** | 文字合成本人声音 | 低，P2 考虑 |
+| **Text Edits Video** | Edit transcript = edit video | High — P1 subtitle-level editing |
+| **Underlord AI Assistant** | Natural language multi-step editing | Medium — similar "regenerate" capability |
+| **Filler Word / Pause Cleanup** | One-click remove um/uh/long pauses | Low — non-core need |
+| **Show Notes / Chapter Markers** | Auto-generate episode descriptions | Medium — can generate LinkedIn long-form posts |
+| **Multi-language Translation & Dubbing** | 30+ languages with lip sync | Medium — P2 |
+| **Overdub** | Text-to-speech in the speaker's voice | Low — P2 consideration |
 
-**局限性**：复杂多轨剪辑仍需专业软件；创意类编辑（"让这更有能量感"）需要人工；生成的社交文案偏泛。
+**Limitations**: Complex multi-track editing still requires professional software; creative edits ("make this more energetic") need manual work; generated social copy is generic.
 
 #### InVideo
 
-**定位**：提示词/文本 → 完整视频，面向社媒运营、营销人员、小型团队。
+**Positioning**: Prompt/text → complete video, targeting social media operators, marketers, and small teams.
 
-**核心 UX 流程**：
+**Core UX Flow**:
 
 ```
-输入提示词 → AI 生成脚本/素材/配音/字幕 → 审校编辑器替换素材 → 导出
+Enter prompt → AI generates script/assets/voiceover/subtitles → Review editor, replace assets → Export
 ```
 
-**值得借鉴的功能**：
+**Notable Features**:
 
-| 功能 | 说明 | 借鉴价值 |
+| Feature | Description | Borrow Value |
 |:---|:---|:---|
-| **品牌套件** | 统一字体/颜色/logo | 中，P1 做字幕样式模板 |
-| **多语言一键生成** | 100+ 语言 | 中，P2 参考这种一键感 |
-| **音色选择** | 多个 AI 配音可选 | 中，P1 通用 TTS 阶段可用 |
-| **素材替换界面** | 左侧片段缩略图 + 右侧预览 | 高，P0 审校页参考 |
-| **提示词引导** | 自然语言控制生成风格 | 中，生成时可加"更学术"等指令 |
+| **Brand Kit** | Unified fonts/colors/logo | Medium — P1 subtitle style templates |
+| **One-click Multi-language** | 100+ languages | Medium — P2 reference for one-click feel |
+| **Voice Selection** | Multiple AI voice options | Medium — P1 general TTS stage usable |
+| **Asset Replacement UI** | Left thumbnail strip + right preview | High — P0 review page reference |
+| **Prompt Guidance** | Natural language controls generation style | Medium — add "more academic" etc. instructions during generation |
 
-**局限性**：从零生成视频，不基于已有演讲内容；AI 脚本偏泛；创意控制力弱。
+**Limitations**: Generates video from scratch, not based on existing talk content; AI scripts are generic; weak creative control.
 
-#### 与我们的差异
+#### Differentiation Summary
 
-| 维度 | OpusClip | Descript | InVideo | 我们的项目 |
+| Dimension | OpusClip | Descript | InVideo | Our Project |
 |:---|:---|:---|:---|:---|
-| 目标用户 | 网红/播客主 | 播客/访谈 | 营销/社媒运营 | 教授/专家/会议主办方/智库 |
-| 起点 | 已有长视频 | 已有音视频 | 一句话提示词 | 已有演讲素材 + 过往材料 |
-| 核心差异点 | 批量 viral 片段 | 文本编辑音视频 | 从零生成视频 | 读懂 Speaker + 保持口吻 + 多素材输入 |
-| 数据处理 | 美国 | 美国 | 美国 | 可选 EU 驻留（GDPR 合规） |
-| 多语言 | 翻译插件感 | 30+ 语言配音 | 100+ 语言 | M3 原生 6 语，保留 Speaker 风格 |
-| 学术内容理解 | 浅，20-40% 需丢弃 | 中等 | 无 | 深，基于 1M 上下文 + Persona Agent |
+| Target Users | Influencers/podcasters | Podcasts/interviews | Marketing/social media ops | Professors/experts/conference organizers/think tanks |
+| Starting Point | Existing long video | Existing audio/video | One-line prompt | Existing talk materials + past materials |
+| Core Differentiator | Batch viral clips | Text-edit audio/video | Generate from scratch | Understand speaker + maintain voice + multi-asset input |
+| Data Processing | US | US | US | Optional EU residency (GDPR compliant) |
+| Multi-language | Translation plugin feel | 30+ language dubbing | 100+ languages | M3 native 6 languages, preserves speaker style |
+| Academic Content Understanding | Shallow, 20-40% discard | Medium | None | Deep, based on 1M context + Persona Agent |
 
-**结论**：我们借鉴它们的**审校流程、评分机制、文本编辑体验、品牌套件**，但核心卖点是**"像本人"、"多素材输入"、"原生多语言"和"EU 数据驻留"**。
-
----
-
-## 4. 目标用户与用户画像
-
-### 4.1 主要用户（欧洲版）
-
-| 用户类型 | 特征 | 使用场景 | 欧洲特定 |
-|:---|:---|:---|:---|
-| **高校教授/研究员** | 学术演讲多，希望扩大影响力 | 会议演讲后自动生成传播素材 | 需要多语言版本（德/法/西）触达欧洲同行 |
-| **企业高管/行业专家** | 有观点输出需求，时间碎片化 | 峰会演讲后生成 LinkedIn 内容 | 需要 GDPR 合规证明才能被公司采购 |
-| **会议主办方** | 有大量演讲视频资产 | 批量生成大会宣传短片 | 欧洲学术会议（如 ECA、EMBO）有批量需求 |
-| **智库/研究机构** | 政策演讲需要分发 | 把演讲变成政策简报 + 社媒内容 | 英国/德国智库（Chatham House、DIW Berlin）内容传播需求强 |
-| **企业大学/培训部门** | 内部培训内容需要复用 | 内训演讲转成可反复使用的学习资产 | 西门子、SAP、Bosch 等欧洲企业有内部知识管理需求 |
-| **专家助理/运营团队** | 实际执行者 | 上传素材、审校 AI 输出、发布 | 需要 GDPR 合规才能处理公司内部演讲内容 |
-
-### 4.2 用户画像示例
-
-**张教授（欧洲版）**
-- 55 岁，某高校 AI 研究院院长，经常参加国际会议
-- 不会剪辑，但希望学生/助理能把他的演讲发到 LinkedIn
-- 有 Twitter/LinkedIn，但更新不频繁
-- 希望内容保持学术严谨，同时让非专业读者能看懂
-- **欧洲特定需求**：需要德语版本触达德国同行，需要 GDPR 合规证明才能被学校采购部门批准
-
-**Sarah（英国智库运营经理）**
-- 32 岁，Chatham House 内容运营
-- 每月处理 10+ 场政策演讲，目前靠人工剪辑和写 LinkedIn 长帖
-- 需要把英语演讲转成法语/德语版本来触达欧洲政策圈
-- **欧洲特定需求**：所有内容必须在 EU 处理，不能传输到美国；需要多语言原生质量，不是机器翻译的僵硬感
+**Conclusion**: We borrow their **review workflow, scoring mechanism, text-editing experience, and brand kit**, but core selling points are **"sounds like me", "multi-asset input", "native multi-language", and "EU data residency"**.
 
 ---
 
-## 5. 产品范围
+## 4. Target Users & Personas
 
-### 5.1 In Scope（本期）
+### 4.1 Primary Users (Europe Edition)
 
-**核心功能（P0）：**
+| User Type | Characteristics | Use Case | Europe-Specific |
+|:---|:---|:---|:---|
+| **University Professors / Researchers** | Many academic talks, want to expand influence | Auto-generate distribution assets after conference talks | Need multi-language versions (German/French/Spanish) to reach European peers |
+| **Corporate Executives / Industry Experts** | Need thought leadership output, time is fragmented | Generate LinkedIn content after summit talks | Need GDPR compliance proof for corporate procurement |
+| **Conference Organizers** | Large volume of talk video assets | Batch-generate conference promotional clips | European academic conferences (e.g. ECA, EMBO) have batch needs |
+| **Think Tanks / Research Institutes** | Policy talks need distribution | Turn talks into policy briefs + social content | UK/German think tanks (Chatham House, DIW Berlin) have strong content distribution needs |
+| **Corporate Universities / Training Depts** | Internal training content needs reuse | Turn internal training talks into reusable learning assets | Siemens, SAP, Bosch and other European enterprises have internal knowledge management needs |
+| **Expert Assistants / Operations Teams** | Actual executors | Upload materials, review AI output, publish | Need GDPR compliance to process internal company talk content |
 
-- **Speaker memory 自动沉淀与可选管理**：任务结束后从输入中提取用户画像（口吻、风格、偏好），持久化为 Speaker；用户可在 `/speakers` 查看、编辑多个历史画像；创建项目时可手动选择，也可不选让系统自动创建
-- 项目级演讲素材上传（视频、音频、文字稿、幻灯片、图片）；输入场景含演讲 / 播客 / 网络研讨会 / 访谈
-- 演讲者过往材料上传（书籍、文章、旧演讲、社媒内容）—— **可选方式**，用来补充或校准画像（非 P0 唯一来源）
-- AI 自动分析：内容切片、传播潜力评分，以及从任务输入中提炼 Speaker memory
-- **AI 生成（P0 核心输出）：**
-  - 3-5 个精彩片段脚本（含 Hook + 字幕 + 画面建议）
-  - LinkedIn 长帖（符合 Speaker 口吻）
-  - 金句卡 / Carousel
-  - **多语言版本（P0 提前）：** 中英 + 德/法/西/意，M3 原生翻译
-- 人工审校界面（脚本编辑、Hook 选择、画面替换、反馈重生成）
-- 导出：文案（Markdown/TXT）、金句卡图片（PNG/JPG）
-- **EU 数据驻留选项（P0）：** 通过 Cast AI Kimchi 提供 GDPR 合规部署
-- GDPR 合规说明与数据删除功能
+### 4.2 User Persona Examples
 
-**P1 功能：**
+**Professor Zhang (Europe Edition)**
+- 55 years old, AI Research Institute Director at a university, frequently attends international conferences
+- Can't edit, but wants students/assistants to post his talks on LinkedIn
+- Has Twitter/LinkedIn, but posts infrequently
+- Wants content to maintain academic rigor while being accessible to non-specialists
+- **Europe-specific need**: Needs German version to reach German peers; needs GDPR compliance proof for school procurement approval
 
-- 粘贴链接自动拉取（YouTube / Vimeo / Zoom / Loom / Drive / 播客等，yt-dlp 类）—— 降低输入门槛的关键入口
-- 视频/音频自动转写（ASR）—— 非文字输入的必经前置（见 7.3）；若 P0 支持音视频/链接输入则须提至 P0
-- 幻灯片解析（PDF/PPT/PPTX → 图片 + 文本）
-- 声音样本上传 + 克隆（通用 TTS 优先，克隆作为增值）
-- 简单视频渲染（图片轮播 + 字幕 + BGM）
-- 品牌套件（统一字体/颜色/logo）
-- Carousel 生成
-- 批量导出
-- 多语言界面（英/德/法/西/意）
-
-**P2 功能：**
-
-- 多语言配音（语音克隆）
-- 直接发布到社媒平台（LinkedIn API）
-- 数据分析（传播效果追踪）
-- 团队协作权限
-- 计费系统
-
-### 5.2 Out of Scope（本期）
-
-- 实时直播处理
-- AI 生成虚拟人形象
-- 复杂的团队协作权限（先做单用户）
-- 面向娱乐/网红的 viral 短视频（我们聚焦知识型内容）
-- TikTok/抖音/小红书版式（欧洲不是核心阵地）
-- 直接发布到社媒平台（只导出，不接入平台 API）
-- 付费订阅与计费系统
-
-### 5.3 主流程定型（v0.4 更新）：竖屏短片成片 + 可编辑
-
-经技术评审，**「竖屏短片成片」从"P1 可选"提升为 MVP 必须的主流程产出，且必须可编辑**。详细方案见 [VIDEO_EDITOR.md](./VIDEO_EDITOR.md) 与 ADR-016。要点：
-
-- **品类 = OpusClip 类**：服务端 AI 流水线 + 浏览器**瘦编辑面** + 深度精剪**甩给剪映/Premiere**。不做 CapCut Web 那样的客户端全功能编辑器。
-- **编辑形态抄 Descript**：文字稿编辑（删句=剪视频，非破坏性可恢复）+ 词↔时间码 + **单轨 trim**；**不做**多轨/图层/转场特效/B-roll 库/自动人脸追踪。
-- **"更轻更弱"边界**：广度上只留一条主流程，但做到 Descript 级精致（预览=成片像素一致、多语字幕可改、一键即得能发的成片）。
-- **技术选型**：钉死 `clip-spec(JSON)` 契约；第一个渲染器用 **Remotion**（服务端无头 Chrome+FFmpeg）当可替换黑盒；将来可换手搓 FFmpeg/客户端 WebCodecs，契约不变。
-- **依赖提级**：**ASR（词级时间戳）**从 P1 升级为**硬前置**，视频需可流式播放/seek（**本地 FS + Range 端点即可，对象存储非必需、留规模化**）；因此 MVP 输入需支持视频/音频。
+**Sarah (UK Think Tank Operations Manager)**
+- 32 years old, Chatham House content operations
+- Processes 10+ policy talks per month, currently relies on manual editing and writing LinkedIn long-form posts
+- Needs to convert English talks into French/German versions to reach European policy circles
+- **Europe-specific need**: All content must be processed in the EU, cannot be transferred to the US; needs native multi-language quality, not stiff machine translation
 
 ---
 
-## 6. 用户故事
+## 5. Product Scope
 
-### 6.1 上传与创建
+### 5.1 In Scope (This Cycle)
 
-**US-001**：作为用户，我希望系统在我完成一次任务后自动沉淀我的风格画像，并在需要时让我查看和编辑它。
+**Core Features (P0):**
 
-**US-002**：作为用户，我希望上传一场演讲的视频或音频，让系统自动转写成文字。
+- **Speaker memory auto-persistence and optional management**: After task completion, extract user persona (voice, style, preferences) from input; persist as Speaker; user can view and edit multiple historical personas at `/speakers`; can manually select during project creation, or leave unselected for auto-creation
+- Project-level talk material upload (video, audio, transcript, slides, images); input scenarios include talks / podcasts / webinars / interviews
+- Speaker past materials upload (books, articles, old talks, social content) — **optional method** to supplement or calibrate persona (not the sole P0 source)
+- AI auto-analysis: content segmentation, virality scoring, and Speaker memory extraction from task input
+- **AI Generation (P0 Core Outputs):**
+  - 3-5 highlight clip scripts (with Hook + subtitles + visual suggestions)
+  - LinkedIn long-form post (matching Speaker voice)
+  - Quote cards / Carousel
+  - **Multi-language versions (P0 accelerated):** Chinese/English + German/French/Spanish/Italian, M3 native translation
+- Human review interface (script editing, hook selection, visual replacement, feedback regeneration)
+- Export: copy (Markdown/TXT), quote card images (PNG/JPG)
+- **EU data residency option (P0):** GDPR-compliant deployment via Cast AI Kimchi
+- GDPR compliance documentation and data deletion features
 
-**US-003**：作为用户，我希望上传文字稿或幻灯片，作为 AI 分析的素材。
+**P1 Features:**
 
-**US-004**：作为用户，我希望上传演讲者过去的文章或书籍章节，帮助 AI 理解他的风格。
+- Paste link auto-fetch (YouTube / Vimeo / Zoom / Loom / Drive / podcasts, etc., yt-dlp-style) — key entry point for lowering input barrier
+- Video/audio auto-transcription (ASR) — mandatory prerequisite for non-text input (see 7.3); if P0 supports audio/video/link input, must be elevated to P0
+- Slide parsing (PDF/PPT/PPTX → images + text)
+- Voice sample upload + cloning (general TTS first, cloning as premium)
+- Simple video rendering (image carousel + subtitles + BGM)
+- Brand kit (unified fonts/colors/logo)
+- Carousel generation
+- Batch export
+- Multi-language UI (English/German/French/Spanish/Italian)
 
-**US-005**：作为用户，我希望上传一段声音样本，用于生成与本人相似的配音。
+**P2 Features:**
 
-### 6.2 生成
+- Multi-language dubbing (voice cloning)
+- Direct publishing to social platforms (LinkedIn API)
+- Analytics (virality tracking)
+- Team collaboration permissions
+- Billing system
 
-**US-006**：作为用户，我希望系统自动提取演讲中的金句和高光片段。
+### 5.2 Out of Scope (This Cycle)
 
-**US-007**：作为用户，我希望系统根据演讲者风格生成短视频脚本。
+- Real-time live streaming processing
+- AI-generated virtual avatars
+- Complex team collaboration permissions (single-user first)
+- Entertainment/influencer viral short-form videos (we focus on knowledge content)
+- TikTok/Douyin/Xiaohongshu formats (not core channels in Europe)
+- Direct publishing to social platforms (export only, no platform API integration)
+- Paid subscriptions and billing system
 
-**US-008**：作为用户，我希望系统生成适合 LinkedIn 发布的长帖文案。
+### 5.3 Main Flow Finalized (v0.4 Update): Vertical Clip Output + Editable
 
-**US-009**：作为用户，我希望系统生成适合多平台的金句图片。
+After technical review, **"vertical clip output" has been elevated from "P1 optional" to an MVP-mandatory main-flow output, and must be editable**. Detailed plan in [VIDEO_EDITOR.md](./VIDEO_EDITOR.md) and ADR-016. Key points:
 
-**US-010**：作为用户，我希望系统把内容翻译成英文或其他语言。
-
-### 6.3 审校与导出
-
-**US-011**：作为用户，我希望预览 AI 生成的视频和文案。
-
-**US-012**：作为用户，我希望编辑生成的脚本、字幕和标题。
-
-**US-013**：作为用户，我希望替换视频中的画面或 BGM。
-
-**US-014**：作为用户，我希望一键导出所有生成内容。
+- **Category = OpusClip-style**: Server-side AI pipeline + browser **lean editing surface** + deep precision editing **handed off to CapCut/Premiere**. Not a client-side full-featured editor like CapCut Web.
+- **Editing form follows Descript**: transcript editing (delete sentence = cut video, non-destructive and recoverable) + word↔timestamp + **single-track trim**; **no** multi-track/layers/transition effects/B-roll library/auto face tracking.
+- **"Lighter and weaker" boundary**: Breadth-wise only one main flow, but polished to Descript-level quality (preview = final pixel match, multi-language subtitles editable, one-click export of publishable final output).
+- **Technical choice**: Lock in `clip-spec(JSON)` contract; first renderer uses **Remotion** (server-side headless Chrome + FFmpeg) as a replaceable black box; future swap to hand-rolled FFmpeg/client WebCodecs possible, contract unchanged.
+- **Dependency escalation**: **ASR (word-level timestamps)** upgraded from P1 to **hard prerequisite**, video needs streamable playback/seek (**local FS + Range endpoint is sufficient, object storage not required, deferred to scale**); therefore MVP input must support video/audio.
 
 ---
 
-## 7. 功能需求
+## 6. User Stories
 
-### 7.1 Speaker memory 管理
+### 6.1 Upload & Create
 
-| ID | 需求 | 优先级 | 说明 |
+**US-001**: As a user, I want the system to automatically persist my style persona after completing a task, and let me view and edit it when needed.
+
+**US-002**: As a user, I want to upload a talk video or audio and have the system automatically transcribe it to text.
+
+**US-003**: As a user, I want to upload a transcript or slides as material for AI analysis.
+
+**US-004**: As a user, I want to upload the speaker's past articles or book chapters to help the AI understand their style.
+
+**US-005**: As a user, I want to upload a voice sample for generating a voice similar to my own.
+
+### 6.2 Generation
+
+**US-006**: As a user, I want the system to automatically extract quotes and highlight segments from the talk.
+
+**US-007**: As a user, I want the system to generate short-form video scripts based on the speaker's style.
+
+**US-008**: As a user, I want the system to generate LinkedIn-ready long-form post copy.
+
+**US-009**: As a user, I want the system to generate quote images suitable for multiple platforms.
+
+**US-010**: As a user, I want the system to translate content into English or other languages.
+
+### 6.3 Review & Export
+
+**US-011**: As a user, I want to preview AI-generated videos and copy.
+
+**US-012**: As a user, I want to edit generated scripts, subtitles, and titles.
+
+**US-013**: As a user, I want to replace visuals or BGM in the video.
+
+**US-014**: As a user, I want to one-click export all generated content.
+
+---
+
+## 7. Functional Requirements
+
+### 7.1 Speaker Memory Management
+
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-001 | 自动创建 Speaker | P0 | 用户未选择 Speaker 时，任务结束后从任务输入中自动提取并创建一条 Speaker memory |
-| FR-002 | 手动创建 Speaker | P0 | 用户可提前在 `/speakers` 手动创建并填写基础资料 |
-| FR-003 | 编辑 Speaker memory | P0 | 修改姓名、身份、头像、语言偏好，以及 AI 提取的风格字段 |
-| FR-004 | 查看 Speaker 风格画像 | P0 | AI 生成的人物风格摘要，可人工编辑 |
-| FR-005 | 管理 Speaker 的过往材料 | P1 | 增删改书籍、文章、社媒内容，作为画像校准的补充来源 |
-| FR-006 | 管理 Speaker 声音样本 | P1 | 上传/删除/预览克隆效果 |
+| FR-001 | Auto-create Speaker | P0 | When user hasn't selected a Speaker, auto-extract and create a Speaker memory from task input after task completion |
+| FR-002 | Manual Speaker creation | P0 | User can manually create and fill in basic info at `/speakers` in advance |
+| FR-003 | Edit Speaker memory | P0 | Modify name, title, avatar, language preferences, and AI-extracted style fields |
+| FR-004 | View Speaker style persona | P0 | AI-generated persona summary, editable by human |
+| FR-005 | Manage Speaker past materials | P1 | CRUD books, articles, social content as supplementary persona calibration sources |
+| FR-006 | Manage Speaker voice samples | P1 | Upload/delete/preview cloning effects |
 
-### 7.2 项目（演讲）管理
+### 7.2 Project (Talk) Management
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-007 | 创建项目 | P0 | 可选择一个已有 Speaker，也可不选；不选时系统会自动创建 |
-| FR-008 | 查看项目列表 | P0 | 按 Speaker/状态/日期筛选 |
-| FR-009 | 删除项目 | P1 | 软删除 |
-| FR-010 | 项目状态跟踪 | P0 | 上传中/处理中/待审校/已完成 |
-| FR-011 | 选择 EU 数据驻留 | P0 | 创建项目时可选：默认（Global）/ EU 数据驻留（通过 Cast AI Kimchi） |
+| FR-007 | Create project | P0 | Can select an existing Speaker, or leave unselected; system auto-creates if unselected |
+| FR-008 | View project list | P0 | Filter by Speaker/status/date |
+| FR-009 | Delete project | P1 | Soft delete |
+| FR-010 | Project status tracking | P0 | Uploading/processing/review/completed |
+| FR-011 | Select EU data residency | P0 | During project creation: Default (Global) / EU data residency (via Cast AI Kimchi) |
 
-### 7.3 素材上传与输入来源
+### 7.3 Material Upload & Input Sources
 
-> **认知：输入来源有两类一等入口——「上传文件」和「粘贴链接」。**
-> 真实场景里，用户的内容往往已经躺在 YouTube / Zoom / Loom / 播客里，"贴链接自动拉取"比"先下载再上传"顺得多，是降门槛的关键入口（行业标准，见 OpusClip）。
+> **Understanding: Input sources have two first-class entry points — "upload file" and "paste link".**
+> In real scenarios, user content often already lives on YouTube / Zoom / Loom / podcasts; "paste link to auto-fetch" is much smoother than "download first, then upload", a key barrier-reducing entry point (industry standard, see OpusClip).
 >
-> **认知：输入场景不限于"演讲"。** 同等支持演讲 / 播客 / 网络研讨会 / 访谈 等"知识型口头长内容"。
+> **Understanding: Input scenarios are not limited to "talks".** Equally support talks / podcasts / webinars / interviews and other "knowledge-oriented oral long-form content".
 >
-> **认知：非文字输入（视频/音频/链接）必经 ASR 转写。** ASR 不是可选锦上添花，而是把音视频变成「带时间轴文字稿」的必经前置，直接决定后续选段、字幕、生成。**ASR 的优先级由输入入口的雄心决定**——若 P0 就要接受视频/音频/链接，ASR 必须随之提前；若 P0 只接受文字稿，ASR 可后置。
+> **Understanding: Non-text input (video/audio/link) must go through ASR transcription.** ASR is not an optional nice-to-have, but a mandatory prerequisite to turn audio/video into "timestamped transcript", directly determining subsequent segment selection, subtitles, and generation. **ASR priority is determined by input ambition** — if P0 accepts video/audio/link, ASR must be elevated accordingly; if P0 only accepts transcripts, ASR can be deferred.
 >
-> **输入处理管线：** `链接/文件 →（yt-dlp 类拉取）→ ASR 转写 → 规整文字稿（含时间轴）→ 人物理解 / 内容生成`。
-> **外部依赖（MiniMax 覆盖不到，需第三方）：** 链接拉取（yt-dlp 类，支持上千站点）、ASR 转写（Whisper 类，多语言）。
+> **Input processing pipeline:** `link/file → (yt-dlp-style fetch) → ASR transcription → normalized transcript (with timestamps) → persona understanding / content generation`.
+> **External dependencies (not covered by MiniMax, need third-party):** link fetching (yt-dlp-style, supports thousands of sites), ASR transcription (Whisper-style, multi-language).
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-011 | 上传视频 | P0 | 支持常见格式，大小上限待定 |
-| FR-012 | 上传音频 | P0 | 支持常见格式 |
-| FR-013 | 上传文字稿 | P0 | 支持 docx/txt/md，或粘贴文本 |
-| FR-014 | 上传幻灯片 | P0 | 支持 pdf/ppt/pptx |
-| FR-015 | 上传现场照片 | P0 | 支持 jpg/png，可多选 |
-| FR-016 | 上传演讲者过往材料 | P0 | 书籍、文章、旧演讲稿、社媒内容 |
-| FR-017 | 素材预处理状态显示 | P0 | 拉取中/转写中/解析中/已完成 |
-| FR-018 | 粘贴链接自动拉取 | P1 | YouTube / Vimeo / Zoom / Loom / Google Drive / 播客 等链接，经 yt-dlp 类工具拉取视频/音频，免去手动下载再上传；拉取后进入 ASR 转写 |
-| FR-019 | 非文字输入自动转写（ASR） | P1 | 视频/音频/链接 → 带时间轴文字稿；多语言；后续选段/字幕/生成的前置；依赖外部 ASR（Whisper 类，MiniMax 不提供）。**若输入入口要在 P0 支持音视频/链接，则本项须提至 P0** |
+| FR-011 | Upload video | P0 | Support common formats, size limit TBD |
+| FR-012 | Upload audio | P0 | Support common formats |
+| FR-013 | Upload transcript | P0 | Support docx/txt/md, or paste text |
+| FR-014 | Upload slides | P0 | Support pdf/ppt/pptx |
+| FR-015 | Upload event photos | P0 | Support jpg/png, multiple selection |
+| FR-016 | Upload speaker past materials | P0 | Books, articles, old talk transcripts, social content |
+| FR-017 | Material preprocessing status display | P0 | Fetching/transcribing/parsing/completed |
+| FR-018 | Paste link auto-fetch | P1 | YouTube / Vimeo / Zoom / Loom / Google Drive / podcast links, fetched via yt-dlp-style tool to get video/audio, eliminating manual download-then-upload; after fetch, enters ASR transcription |
+| FR-019 | Non-text input auto-transcription (ASR) | P1 | Video/audio/link → timestamped transcript; multi-language; prerequisite for subsequent segment selection/subtitles/generation; depends on external ASR (Whisper-style, MiniMax doesn't provide). **If input entry needs to support audio/video/link in P0, this item must be elevated to P0** |
 
-### 7.4 人物理解与风格画像
+### 7.4 Persona Understanding & Style Persona
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-018 | 从任务输入自动提取 Speaker memory | P0 | 从当前任务素材 + 提示词中提取价值观、常用比喻、句式风格、专业术语偏好、情感倾向，持久化为 Speaker |
-| FR-019 | 人工编辑 Speaker memory | P0 | 用户可修改、补充、禁用某些表达 |
-| FR-020 | 内容切片与评分 | P0 | 把演讲切成可传播片段，按"传播潜力分"（0-100）排序 |
-| FR-021 | 关键帧/幻灯片页推荐 | P1 | 推荐适合作为画面的素材 |
-| FR-022 | 金句提取 | P0 | 自动提取 5-10 条最具传播力的金句 |
+| FR-018 | Auto-extract Speaker memory from task input | P0 | Extract values, common metaphors, sentence patterns, terminology preferences, emotional tendencies from current task materials + prompts, persist as Speaker |
+| FR-019 | Manual edit Speaker memory | P0 | User can modify, supplement, or disable certain expressions |
+| FR-020 | Content segmentation & scoring | P0 | Slice talk into shareable segments, sort by "virality potential score" (0-100) |
+| FR-021 | Keyframe/slide page recommendation | P1 | Recommend suitable visuals from uploaded materials |
+| FR-022 | Quote extraction | P0 | Auto-extract 5-10 most viral quotes |
 
-### 7.5 口吻设定
+### 7.5 Voice Settings
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-023 | 风格滑块 | P0 | 学术严谨 ↔ 通俗口语；理性克制 ↔ 激情澎湃；简短直接 ↔ 详细展开 |
-| FR-024 | 目标受众选择 | P0 | 同行学者/行业从业者/普通大众/投资人/政策制定者 |
-| FR-025 | 口头禅/固定开场结尾 | P1 | 用户可设置常用表达 |
-| FR-026 | 禁用词设置 | P2 | 避免某些词汇出现 |
+| FR-023 | Style sliders | P0 | Academic rigor ↔ casual spoken; rational restraint ↔ passionate; concise direct ↔ detailed expansion |
+| FR-024 | Target audience selection | P0 | Peer scholars / industry practitioners / general public / investors / policymakers |
+| FR-025 | Catchphrases / fixed openers & closers | P1 | User can set common expressions |
+| FR-026 | Blocked words | P2 | Avoid certain words appearing |
 
-### 7.6 声音样本
+### 7.6 Voice Samples
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-027 | 上传声音样本 | P1 | 1-3 分钟清晰录音 |
-| FR-028 | 预览克隆声音 | P1 | 用样本文本试听 |
-| FR-029 | 选择是否用于生成 | P1 | 用户可开关克隆声音 |
-| FR-030 | 多语言音色映射 | P2 | 中文用本人克隆，英文可选英式/美式 |
+| FR-027 | Upload voice sample | P1 | 1-3 minutes of clear recording |
+| FR-028 | Preview cloned voice | P1 | Listen with sample text |
+| FR-029 | Toggle for generation | P1 | User can enable/disable cloned voice |
+| FR-030 | Multi-language voice mapping | P2 | Chinese uses cloned voice, English can choose British/American |
 
-### 7.7 内容生成
+### 7.7 Content Generation
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-031 | 生成精彩片段脚本 | P0 | 默认 3-5 个，每个含：Hook + 脚本 + 字幕时间轴 + 画面建议 + 配乐情绪 |
-| FR-032 | 生成备选 Hook | P0 | 每个 clip 配 3 个备选标题/Hook，用户可选或自定义 |
-| FR-033 | 生成 LinkedIn 长帖 | P0 | 1 篇，符合 Speaker 口吻，结构：Hook → 核心观点 → 个人洞察 → 行动号召 |
-| FR-034 | 生成金句卡 | P0 | 3-5 张，1:1 或 4:5，含署名和风格模板 |
-| FR-035 | 生成 Carousel | P1 | 多页图文，适合 LinkedIn |
-| **FR-036** | **生成多语言版本** | **P0** | **中英 + 德/法/西/意，M3 原生翻译，保留原意和冲击力** |
-| FR-037 | 生成画面/B-roll 提示 | P1 | 为每个 clip 标注建议画面，从上传素材中匹配 |
-| FR-038 | 生成配乐建议 | P1 | 按情绪标签（沉稳/激昂/悬疑/希望）匹配 BGM |
+| FR-031 | Generate highlight clip scripts | P0 | Default 3-5, each containing: Hook + script + subtitle timestamps + visual suggestions + music mood |
+| FR-032 | Generate alternative hooks | P0 | Each clip gets 3 alternative titles/hooks, user can select or customize |
+| FR-033 | Generate LinkedIn long-form post | P0 | 1 post, matching Speaker voice, structure: Hook → Core insight → Personal take → Call to action |
+| FR-034 | Generate quote cards | P0 | 3-5 cards, 1:1 or 4:5, with attribution and style templates |
+| FR-035 | Generate Carousel | P1 | Multi-page images + text, suitable for LinkedIn |
+| **FR-036** | **Generate multi-language versions** | **P0** | **Chinese/English + German/French/Spanish/Italian, M3 native translation, preserves original meaning and impact** |
+| FR-037 | Generate visual/B-roll prompts | P1 | Annotate suggested visuals for each clip, match from uploaded materials |
+| FR-038 | Generate music suggestions | P1 | Match BGM by mood tags (calm/passionate/suspenseful/hopeful) |
 
-### 7.8 审校与编辑（迭代：直接编辑优先，对话兜底）
+### 7.8 Review & Editing (Iteration: Direct Edit First, Dialogue as Fallback)
 
-> **认知：产出"必然要改"，但"改" ≠ "必须多轮对话"。** 把所有修改都做成对话，对最常见的小修改反而更慢、更不可控、更费 token。应按修改类型选最快的交互：
+> **Understanding: Output "will inevitably need changes", but "change" ≠ "must be multi-turn dialogue".** Making all changes into dialogue is slower, less controllable, and more token-consuming for the most common small edits. Choose the fastest interaction by edit type:
 >
-> | 想改什么 | 最快方式 | 要对话吗 |
+> | What to change | Fastest way | Need dialogue? |
 > |:---|:---|:---|
-> | 改个词 / 删句 / 调语序 | 直接在文本里编辑（所见即所得） | 否——描述比直接改慢 |
-> | 这条不行，换一版 | 一键"重新生成"（触发 Reviser） | 否——按钮更快 |
-> | 要更短 / 更正式 / 更口语 | 快捷动作（缩短 / 正式 / 口语…） | 否——预设动作更快 |
-> | 模糊的大方向调整（"少点术语，多讲故事"） | 自然语言说一句 | 是——这才是对话的价值 |
-> | 换金句卡模板 / 字幕样式 | 改 Brand template 设置 | 否 |
+> | Change a word / delete a sentence / adjust word order | Edit directly in text (WYSIWYG) | No — describing is slower than direct editing |
+> | This one doesn't work, give me another version | One-click "regenerate" (triggers Reviser) | No — button is faster |
+> | Make it shorter / more formal / more casual | Quick actions (shorten / formal / casual…) | No — preset actions are faster |
+> | Vague broad direction adjustment ("less jargon, more storytelling") | Natural language sentence | Yes — this is where dialogue adds value |
+> | Change quote card template / subtitle style | Change Brand template settings | No |
 >
-> **结论：迭代主力 = 直接编辑 + 局部重生成 + 快捷动作（覆盖约 80% 的修改）；自由对话只做"模糊大方向调整"的兜底，非核心、可后置（MVP 可先不做对话）。**
-> 对话兜底时，agent 上下文 = 演讲素材 + Speaker persona + 当前产出 + 必要历史。
-> （第 20 章是**内部 agent 编排**，与此处面向用户的迭代交互是两回事。）
+> **Conclusion: Iteration main force = direct editing + local regeneration + quick actions (covers ~80% of edits); free dialogue only as fallback for "vague broad direction adjustments", non-core, can be deferred (MVP can skip dialogue first).**
+> When dialogue fallback is used, agent context = talk materials + Speaker persona + current output + necessary history.
+> (Chapter 20 is **internal agent orchestration**, separate from the user-facing iteration interaction here.)
 >
-> **当前差距：** 产出目前是只读展示，缺"直接编辑"与"局部重生成/快捷动作"入口；Reviser 端点已有但前端未接（首页 "New chat" 只是对话感的 UI 暗示）。
+> **Current gap:** Output is currently read-only display, missing "direct edit" and "local regeneration/quick action" entry points; Reviser endpoint exists but frontend not yet connected (home page "New chat" is just a dialogue-suggesting UI hint).
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-039 | 脚本编辑 | P0 | 修改字幕、hook、结尾，按时间轴展示 |
-| FR-040 | 标题选择/编辑 | P0 | 从 AI 备选标题中选或重写 |
-| FR-041 | 画面替换 | P1 | 从上传素材中选其他画面 |
-| FR-042 | BGM 替换 | P1 | 按情绪标签切换背景音乐 |
-| FR-043 | 重新生成 | P0 | 对单个 clip 或衍生内容局部重生成（触发 Reviser Agent） |
-| FR-044 | 反馈结构化 | P0 | 用户反馈类型：Hook 不行 / 整体风格不像 / 太复杂/太简单 / 事实不准确 / 想换表达 |
-| FR-045 | 多语言审校 | P0 | 对多语言版本进行逐句审校和修正 |
+| FR-039 | Script editing | P0 | Modify subtitles, hooks, endings, displayed by timeline |
+| FR-040 | Title selection/editing | P0 | Select from AI alternative titles or rewrite |
+| FR-041 | Visual replacement | P1 | Select alternative visuals from uploaded materials |
+| FR-042 | BGM replacement | P1 | Switch background music by mood tags |
+| FR-043 | Regenerate | P0 | Local regeneration for a single clip or derivative content (triggers Reviser Agent) |
+| FR-044 | Structured feedback | P0 | User feedback types: Hook not working / overall style mismatch / too complex/too simple / factual inaccuracy / want different expression |
+| FR-045 | Multi-language review | P0 | Sentence-by-sentence review and correction of multi-language versions |
 
-### 7.9 导出
+### 7.9 Export
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-046 | 导出文案 | P0 | Markdown/TXT，含所有语言版本 |
-| FR-047 | 导出金句卡图片 | P0 | PNG/JPG，多套模板可选 |
-| FR-048 | 导出视频 | P1 | MP4（简单渲染：图片轮播 + 字幕 + BGM） |
-| FR-049 | 导出字幕文件 | P1 | SRT/VTT |
-| FR-050 | 批量导出 | P1 | 打包下载一个项目的所有产出 |
-| FR-051 | 导出 EU 合规证明 | P0 | 生成 GDPR 数据处理说明 PDF（如选择 EU 驻留） |
+| FR-046 | Export copy | P0 | Markdown/TXT, including all language versions |
+| FR-047 | Export quote card images | P0 | PNG/JPG, multiple templates available |
+| FR-048 | Export video | P1 | MP4 (simple rendering: image carousel + subtitles + BGM) |
+| FR-049 | Export subtitle files | P1 | SRT/VTT |
+| FR-050 | Batch export | P1 | Package download all outputs of a project |
+| FR-051 | Export EU compliance certificate | P0 | Generate GDPR data processing statement PDF (if EU residency selected) |
 
-### 7.10 欧洲本地化功能
+### 7.10 European Localization Features
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| FR-052 | 多语言界面 | P1 | 前端界面支持英/德/法/西/意切换 |
-| FR-053 | 欧洲时间格式 | P1 | 支持 24 小时制、DD/MM/YYYY 日期格式 |
-| FR-054 | 欧洲学术会议模板 | P1 | 针对欧洲学术会议的输出模板（如 ECA、EMBO 风格） |
-| FR-055 | 欧洲 B2B 营销模板 | P1 | 针对欧洲 LinkedIn B2B 营销的文案模板（德式严谨、法式优雅、英式简洁） |
+| FR-052 | Multi-language UI | P1 | Frontend UI supports English/German/French/Spanish/Italian switching |
+| FR-053 | European time format | P1 | Support 24-hour clock, DD/MM/YYYY date format |
+| FR-054 | European academic conference templates | P1 | Output templates for European academic conferences (e.g. ECA, EMBO style) |
+| FR-055 | European B2B marketing templates | P1 | Copy templates for European LinkedIn B2B marketing (German rigor, French elegance, British brevity) |
 
 ---
 
-## 8. 非功能需求
+## 8. Non-Functional Requirements
 
-### 8.1 性能
+### 8.1 Performance
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| NFR-001 | 上传响应 | P0 | 素材上传后即时反馈，大文件分片 |
-| NFR-002 | 生成耗时 | P0 | 简单项目（文字稿+图片）5 分钟内出初稿 |
-| NFR-003 | 视频渲染 | P1 | 单个 clip 渲染 2 分钟内 |
-| NFR-004 | 并发处理 | P1 | 支持多个项目排队异步处理 |
+| NFR-001 | Upload response | P0 | Immediate feedback after material upload, large file chunking |
+| NFR-002 | Generation time | P0 | Simple projects (transcript + images) initial draft within 5 minutes |
+| NFR-003 | Video rendering | P1 | Single clip render within 2 minutes |
+| NFR-004 | Concurrent processing | P1 | Support multiple projects queued for async processing |
 
-### 8.2 安全与隐私
+### 8.2 Security & Privacy
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| NFR-005 | 用户数据隔离 | P0 | 不同用户数据不可互相访问 |
-| NFR-006 | 素材安全存储 | P0 | 上传文件加密存储 |
-| NFR-007 | 声音样本授权 | P1 | 明确告知用户声音样本仅用于本人内容生成 |
-| NFR-008 | 版权合规提示 | P1 | 对音乐、图片等素材给出版权提醒 |
-| NFR-009 | EU 数据驻留 | P0 | 选择 EU 的项目，数据存储和处理在欧盟区域内 |
-| NFR-010 | GDPR 合规 | P0 | 提供数据处理说明、用户数据删除、导出功能 |
-| NFR-011 | 数据跨境控制 | P0 | EU 项目数据不得传输到非 EU 区域进行处理 |
+| NFR-005 | User data isolation | P0 | Different users' data cannot be accessed by each other |
+| NFR-006 | Material secure storage | P0 | Uploaded files encrypted at rest |
+| NFR-007 | Voice sample authorization | P1 | Clearly inform users voice samples are only used for their own content generation |
+| NFR-008 | Copyright compliance notice | P1 | Provide copyright reminders for music, images, and other materials |
+| NFR-009 | EU data residency | P0 | For EU-selected projects, data storage and processing within EU region |
+| NFR-010 | GDPR compliance | P0 | Provide data processing statements, user data deletion, export features |
+| NFR-011 | Cross-border data control | P0 | EU project data must not be transferred to non-EU regions for processing |
 
-### 8.3 可用性
+### 8.3 Usability
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| NFR-012 | 上传引导 | P0 | 明确告诉用户"传一种即可，多传更好" |
-| NFR-013 | 状态透明 | P0 | 每个处理步骤显示进度 |
-| NFR-014 | 审校友好 | P0 | 生成内容并排展示，便于对比 |
-| NFR-015 | 移动端适配 | P2 | 上传大文件建议在桌面端 |
+| NFR-012 | Upload guidance | P0 | Clearly tell users "upload at least one type, more is better" |
+| NFR-013 | Status transparency | P0 | Show progress for each processing step |
+| NFR-014 | Review-friendly | P0 | Generated content displayed side-by-side for easy comparison |
+| NFR-015 | Mobile adaptation | P2 | Large file upload recommended on desktop |
 
-### 8.4 可扩展性
+### 8.4 Extensibility
 
-| ID | 需求 | 优先级 | 说明 |
+| ID | Requirement | Priority | Description |
 |:---|:---|:---|:---|
-| NFR-016 | 模块解耦 | P0 | 媒体处理、智能生成、渲染层可独立替换 |
-| NFR-017 | 多语言扩展 | P1 | 新增语言不改动核心逻辑 |
-| NFR-018 | 输出格式扩展 | P1 | 新增平台版式不改动核心逻辑 |
+| NFR-016 | Module decoupling | P0 | Media processing, intelligent generation, rendering layer can be independently replaced |
+| NFR-017 | Multi-language extension | P1 | Add new languages without changing core logic |
+| NFR-018 | Output format extension | P1 | Add new platform formats without changing core logic |
 
 ---
 
-## 9. 技术架构
+## 9. Technical Architecture
 
-### 9.1 抽象架构图
+### 9.1 Abstract Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        客户端层                              │
-│              （Web 界面 / 移动端界面 / 管理后台）              │
+│                        Client Layer                          │
+│              (Web UI / Mobile UI / Admin Dashboard)        │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                   应用接口层：FastAPI                         │
-│         （RESTful API、上传接口、任务调度、权限管理）           │
+│                   Application Layer: FastAPI                  │
+│         (RESTful API, upload endpoints, task scheduling,    │
+│          permission management)                               │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                  核心智能层：MiniMax M3                       │
+│                  Core Intelligence Layer: MiniMax M3          │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐   │
-│  │ 长上下文理解 │ │ 多模态理解   │ │ 结构化内容生成       │   │
-│  │             │ │ （图文视频） │ │ （JSON 脚本/文案）   │   │
+│  │ Long Context │ │ Multimodal  │ │ Structured Content │   │
+│  │ Understanding│ │ Understanding│ │ Generation         │   │
+│  │              │ │ (Image/Text/ │ │ (JSON scripts/copy)│   │
+│  │              │ │  Video)      │ │                    │   │
 │  └─────────────┘ └─────────────┘ └─────────────────────┘   │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐   │
-│  │ 人物风格画像 │ │ 内容切片评分 │ │ 多语言翻译           │   │
+│  │ Persona      │ │ Content      │ │ Multi-language      │   │
+│  │ Style Persona│ │ Segmentation │ │ Translation         │   │
+│  │              │ │ & Scoring    │ │                     │   │
 │  └─────────────┘ └─────────────┘ └─────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                      异步任务调度层                          │
-│              （任务队列 + 后台工作节点）                       │
+│                      Async Task Scheduling Layer             │
+│              (Task queue + background worker nodes)          │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                      媒体处理层                              │
+│                      Media Processing Layer                  │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐      │
-│  │ 语音识别  │ │ 视频抽帧  │ │ 文档解析  │ │ 图片处理  │      │
-│  │ 引擎     │ │ 引擎     │ │ 引擎     │ │ 引擎     │      │
+│  │ Speech   │ │ Video    │ │ Document │ │ Image      │      │
+│  │ Recognition│ │ Frame    │ │ Parsing  │ │ Processing │      │
+│  │ Engine   │ │ Engine   │ │ Engine   │ │ Engine     │      │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘      │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐      │
-│  │ 声音克隆  │ │ 语音合成  │ │ 视频渲染  │ │ 图形生成  │      │
-│  │ 服务     │ │ 服务     │ │ 引擎     │ │ 引擎     │      │
+│  │ Voice    │ │ Speech   │ │ Video    │ │ Graphics   │      │
+│  │ Cloning  │ │ Synthesis│ │ Rendering│ │ Generation │      │
+│  │ Service  │ │ Service  │ │ Engine   │ │ Engine     │      │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘      │
 │  ┌──────────┐                                              │
-│  │ 配乐/音效 │                                              │
-│  │ 资源服务  │                                              │
+│  │ Music/   │                                              │
+│  │ Sound    │                                              │
+│  │ Resource │                                              │
+│  │ Service  │                                              │
 │  └──────────┘                                              │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                      数据持久化层                            │
+│                      Data Persistence Layer                  │
 │  ┌────────────┐ ┌────────────┐ ┌──────────────────────┐   │
-│  │ 关系型数据库 │ │ 对象存储    │ │ 向量数据库（可选）    │   │
+│  │ Relational │ │ Object     │ │ Vector Database      │   │
+│  │ Database   │ │ Storage    │ │ (optional)           │   │
 │  └────────────┘ └────────────┘ └──────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 9.2 架构说明
+### 9.2 Architecture Description
 
-| 层级 | 已确定技术 | 职责 |
+| Layer | Confirmed Technology | Responsibility |
 |:---|:---|:---|
-| 客户端层 | **TanStack Start** | 用户上传素材、配置口吻、审校生成结果、导出内容；支持多语言界面 |
-| 应用接口层 | **FastAPI** | 接收上传、管理 Speaker/项目/任务、对外暴露 REST API、协调各层；根据项目选择 Global 或 EU 部署 |
-| 核心智能层 | **MiniMax M3** | 理解全部输入素材、生成人物画像、提取金句、生成脚本与社媒文案、多语言翻译 |
-| 异步任务调度层 | **asyncio + 后台任务** | 把耗时任务（渲染）异步执行，P0 不上 Celery/Redis |
-| 媒体处理层 | 待定 | 处理音视频的转写/抽帧/渲染，文档解析，图片处理，声音克隆与合成，配乐匹配 |
-| 数据持久化层 | **PostgreSQL + 本地文件系统** | PostgreSQL 存元数据，本地文件系统存上传文件和生成结果；EU 项目通过 Cast AI 存 EU 区域 |
+| Client Layer | **TanStack Start** | User material upload, voice configuration, review generation results, export content; supports multi-language UI |
+| Application Layer | **FastAPI** | Receive uploads, manage Speaker/project/tasks, expose REST API, coordinate layers; choose Global or EU deployment by project |
+| Core Intelligence Layer | **MiniMax M3** | Understand all input materials, generate persona, extract quotes, generate scripts and social copy, multi-language translation |
+| Async Task Scheduling Layer | **asyncio + background tasks** | Execute time-consuming tasks (rendering) asynchronously; no Celery/Redis in P0 |
+| Media Processing Layer | TBD | Handle audio/video transcription/frame extraction/rendering, document parsing, image processing, voice cloning and synthesis, music matching |
+| Data Persistence Layer | **PostgreSQL + local filesystem** | PostgreSQL for metadata, local filesystem for uploaded files and generated results; EU projects via Cast AI in EU region |
 
-### 9.3 数据流
+### 9.3 Data Flow
 
 ```
-用户输入素材（两类入口）
-    ├── 上传文件（视频/音频/文字稿/幻灯片/图片）
-    └── 粘贴链接（YouTube/Vimeo/Zoom/Loom/Drive/播客…）→ yt-dlp 类拉取视频/音频
+User input materials (two entry points)
+    ├── Upload files (video/audio/transcript/slides/images)
+    └── Paste links (YouTube/Vimeo/Zoom/Loom/Drive/podcasts…) → yt-dlp-style fetch video/audio
     ↓
-FastAPI 接收 → 存入本地文件系统 → 写入 PostgreSQL
+FastAPI receives → store in local filesystem → write to PostgreSQL
     ↓
-asyncio 后台任务分发（预处理）
-    ├── 视频/音频 → ASR 转写（Whisper 类，多语言）→ 带时间轴文字稿  ← 非文字输入的必经前置
-    ├── 现场照片 → 图片处理 → 压缩
-    └── 幻灯片/PDF → 文档解析 → 图片 + 文本（P0 可选）
+asyncio background task dispatch (preprocessing)
+    ├── Video/audio → ASR transcription (Whisper-style, multi-language) → timestamped transcript ← mandatory prerequisite for non-text input
+    ├── Event photos → image processing → compression
+    └── Slides/PDF → document parsing → images + text (P0 optional)
     ↓
-MiniMax M3 统一理解：
-    演讲内容 + 过往材料 + 现场图片 + 口吻设定（Speaker persona）
+MiniMax M3 unified understanding:
+    talk content + past materials + event photos + voice settings (Speaker persona)
     ↓
-MiniMax M3 输出结构化方案：
-    clip 脚本 / LinkedIn 文案 / 金句卡 / 多语言版本
+MiniMax M3 outputs structured plan:
+    clip scripts / LinkedIn copy / quote cards / multi-language versions
     ↓
-asyncio 后台任务分发渲染
-    ├── 视频渲染引擎 → 竖屏短片
-    ├── 图形生成引擎 → 金句卡
-    └── 配乐资源服务 → BGM
+asyncio background task dispatch rendering
+    ├── video rendering engine → vertical clip
+    ├── graphics generation engine → quote card
+    └── music resource service → BGM
     ↓
-FastAPI 返回结果 → TanStack Start 前端审校
+FastAPI returns results → TanStack Start frontend review
     ↓
-迭代回路（围绕产出）：
-    直接编辑（本地保存） / 局部重生成（Reviser）/ 快捷动作（缩短·正式·口语）/ 对话兜底
-    └── 重生成时带上下文：素材 + persona + 当前产出 → 回到生成
+Iteration loop (around output):
+    direct edit (local save) / local regeneration (Reviser) / quick actions (shorten·formal·casual) / dialogue fallback
+    └── regeneration carries context: materials + persona + current output → back to generation
 ```
 
-### 9.4 Agent 工作流设计
+### 9.4 Agent Workflow Design
 
-P0 必须内置 Agent 流程，核心原因是**用户对 AI 生成结果必然存在不满意的情况**，系统需要支持"生成 → 自评 → 修正 → 人工反馈 → 局部重生成"的闭环。
+P0 must have built-in Agent workflow, core reason being **users will inevitably be dissatisfied with AI-generated results**, the system needs to support a "generate → self-review → correct → human feedback → local regenerate" closed loop.
 
-#### 核心 Agent 列表
+#### Core Agent List
 
-| Agent | 职责 | 触发时机 |
+| Agent | Responsibility | Trigger Timing |
 |:---|:---|:---|
-| Persona Agent | 基于过往材料生成 Speaker 风格画像 | Speaker 创建/更新后 |
-| Content Analyzer | 分析演讲内容，切片、评分、提取金句 | 素材预处理完成后 |
-| Hook Agent | 写抓眼球的开头 | 生成 clip 时 |
-| Script Agent | 生成精彩片段脚本 | 生成 clip 时 |
-| LinkedIn Agent | 生成 LinkedIn 长帖 | 生成衍生内容时 |
-| Quote Card Agent | 生成金句卡文案 | 生成衍生内容时 |
-| Carousel Agent | 生成 Carousel 多页图文 | 生成衍生内容时（P1） |
-| Translator Agent | 多语言翻译 | 生成多语言版本时 |
-| Review Agent | 按 Speaker 风格评分并指出问题 | 每次生成后 |
-| Reviser Agent | 根据反馈修改指定内容 | 自评未通过或用户反馈后 |
+| Persona Agent | Generate Speaker style persona based on past materials | After Speaker creation/update |
+| Content Analyzer | Analyze talk content, segment, score, extract quotes | After material preprocessing completes |
+| Hook Agent | Write attention-grabbing openers | During clip generation |
+| Script Agent | Generate highlight clip scripts | During clip generation |
+| LinkedIn Agent | Generate LinkedIn long-form posts | During derivative content generation |
+| Quote Card Agent | Generate quote card copy | During derivative content generation |
+| Carousel Agent | Generate Carousel multi-page images + text | During derivative content generation (P1) |
+| Translator Agent | Multi-language translation | During multi-language version generation |
+| Review Agent | Score by Speaker style and point out issues | After each generation |
+| Reviser Agent | Modify specified content based on feedback | After self-review fails or user feedback |
 
-#### 生成流程
+#### Generation Flow
 
 ```
-上传素材并预处理
+Upload materials and preprocess
     ↓
-Persona Agent → Speaker 风格画像
+Persona Agent → Speaker style persona
     ↓
-Content Analyzer → 内容切片 + 传播潜力评分 + 金句提取
+Content Analyzer → content segmentation + virality scoring + quote extraction
     ↓
-对每个高潜片段：
-    Hook Agent → 备选 Hook
-    Script Agent → 初稿脚本
-    Review Agent → 风格评分
-    如果 score < 7：
-        Reviser Agent → 修正
-    重复最多 2 次
+For each high-potential segment:
+    Hook Agent → alternative hooks
+    Script Agent → initial draft script
+    Review Agent → style score
+    If score < 7:
+        Reviser Agent → correction
+    Repeat up to 2 times
     ↓
-LinkedIn Agent / Quote Card Agent / Carousel Agent → 衍生内容
+LinkedIn Agent / Quote Card Agent / Carousel Agent → derivative content
     ↓
-Translator Agent → 多语言版本（德/法/西/意）
+Translator Agent → multi-language versions (German/French/Spanish/Italian)
     ↓
-等待用户审校
+Wait for user review
     ↓
-用户反馈 → Reviser Agent → 局部重生成
+User feedback → Reviser Agent → local regeneration
 ```
 
-#### 人工反馈循环（HITL）
+#### Human-in-the-Loop (HITL)
 
-用户反馈需要结构化，系统才能有效处理：
+User feedback needs to be structured for the system to process effectively:
 
-| 反馈类型 | 处理范围 |
+| Feedback Type | Processing Scope |
 |:---|:---|
-| Hook 不吸引人 | 只重新生成 hook |
-| 整体风格不像本人 | 重新生成整个脚本，可能需调整 persona/tone |
-| 信息太复杂/太简单 | 按受众重新生成 |
-| 事实不准确 | 提示用户检查源素材，不自动修正 |
-| 想换表达方式 | 基于用户编辑内容再优化 |
+| Hook not engaging | Only regenerate hook |
+| Overall style doesn't sound like me | Regenerate entire script, may need persona/tone adjustment |
+| Information too complex/too simple | Regenerate by audience |
+| Factually inaccurate | Prompt user to check source materials, do not auto-correct |
+| Want different expression | Optimize based on user-edited content |
 
 ---
 
-## 10. 数据模型
+## 10. Data Models
 
-### 10.1 用户（User）
+### 10.1 User
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |:---|:---|:---|
-| id | UUID | 主键 |
-| email | string | 登录邮箱 |
-| name | string | 用户名 |
-| language | string | 界面语言偏好（en/de/fr/es/it/zh） |
-| region | string | 地区（Global / EU） |
-| created_at | datetime | 创建时间 |
+| id | UUID | Primary key |
+| email | string | Login email |
+| name | string | Username |
+| language | string | UI language preference (en/de/fr/es/it/zh) |
+| region | string | Region (Global / EU) |
+| created_at | datetime | Creation time |
 
-### 10.2 演讲者（Speaker / Memory）
+### 10.2 Speaker / Memory
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |:---|:---|:---|
-| id | UUID | 主键 |
-| user_id | UUID | 关联用户（按用户隔离） |
-| name | string | 姓名 |
-| title | string | 身份/头衔 |
-| avatar_url | string | 头像 |
-| language | string | 主要语言 |
-| memory | JSON | AI 从任务输入中提取的风格画像（原 `persona`，逐步收敛命名） |
-| tone_settings | JSON | 口吻滑块设置 |
-| created_at | datetime | 创建时间 |
-| source | enum | `auto`（任务自动创建）/ `manual`（用户手动创建） |
+| id | UUID | Primary key |
+| user_id | UUID | Associated user (isolated by user) |
+| name | string | Name |
+| title | string | Title/position |
+| avatar_url | string | Avatar |
+| language | string | Primary language |
+| memory | JSON | AI-extracted style persona from task input (formerly `persona`, naming converging) |
+| tone_settings | JSON | Voice slider settings |
+| created_at | datetime | Creation time |
+| source | enum | `auto` (auto-created from task) / `manual` (user manually created) |
 
-### 10.3 项目（Project）
+### 10.3 Project
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |:---|:---|:---|
-| id | UUID | 主键 |
-| speaker_id | UUID | 关联演讲者，**可选**；为空时任务结束后自动创建 |
-| title | string | 项目标题 |
-| event_name | string | 事件名称 |
-| language | string | 内容语言 |
+| id | UUID | Primary key |
+| speaker_id | UUID | Associated speaker, **optional**; auto-created after task if empty |
+| title | string | Project title |
+| event_name | string | Event name |
+| language | string | Content language |
 | status | enum | draft/uploading/processing/review/completed |
-| data_region | enum | global / eu（EU 数据驻留选项） |
-| tone_snapshot | JSON | 生成时的口吻设置快照 |
-| created_at | datetime | 创建时间 |
+| data_region | enum | global / eu (EU data residency option) |
+| tone_snapshot | JSON | Voice settings snapshot at generation time |
+| created_at | datetime | Creation time |
 
-### 10.4 素材（Asset）
+### 10.4 Asset
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |:---|:---|:---|
-| id | UUID | 主键 |
-| project_id | UUID | 关联项目 |
+| id | UUID | Primary key |
+| project_id | UUID | Associated project |
 | type | enum | video/audio/transcript/slides/image/voice_sample/past_material |
-| file_url | string | 文件地址 |
-| transcript | text | 转录文本（音视频） |
-| extracted_text | text | 提取文本（文档） |
-| keyframes | JSON | 关键帧列表（视频） |
-| slide_pages | JSON | 幻灯片页列表 |
-| processed_at | datetime | 处理完成时间 |
+| file_url | string | File URL |
+| transcript | text | Transcription text (audio/video) |
+| extracted_text | text | Extracted text (documents) |
+| keyframes | JSON | Keyframe list (video) |
+| slide_pages | JSON | Slide page list |
+| processed_at | datetime | Processing completion time |
 
-### 10.5 生成片段（Clip）
+### 10.5 Clip
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |:---|:---|:---|
-| id | UUID | 主键 |
-| project_id | UUID | 关联项目 |
-| hook | string | 开头 hook |
-| script | JSON | 分镜脚本 |
-| title_options | JSON | 备选标题 |
-| subtitles | JSON | 字幕时间轴 |
-| music_mood | string | 配乐情绪 |
+| id | UUID | Primary key |
+| project_id | UUID | Associated project |
+| hook | string | Opening hook |
+| script | JSON | Shot list script |
+| title_options | JSON | Alternative titles |
+| subtitles | JSON | Subtitle timestamps |
+| music_mood | string | Music mood |
 | status | enum | generated/rendering/completed |
-| video_url | string | 生成视频地址 |
-| duration | int | 时长（秒） |
-| language | string | 语言 |
+| video_url | string | Generated video URL |
+| duration | int | Duration (seconds) |
+| language | string | Language |
 
-### 10.6 衍生内容（Derivative）
+### 10.6 Derivative
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |:---|:---|:---|
-| id | UUID | 主键 |
-| project_id | UUID | 关联项目 |
+| id | UUID | Primary key |
+| project_id | UUID | Associated project |
 | type | enum | linkedin_post/quote_card/carousel/multilingual_script |
-| content | text/JSON | 内容 |
-| language | string | 语言 |
-| image_url | string | 图片地址（金句卡） |
+| content | text/JSON | Content |
+| language | string | Language |
+| image_url | string | Image URL (quote card) |
 | status | enum | generated/edited |
 
 ---
 
-## 11. 核心用户流程
+## 11. Core User Flows
 
-### 11.1 创建并管理 Speaker memory
-
-```
-1. 用户登录
-2. 方式 A：手动创建 Speaker（可选）
-   ├── 输入姓名、身份、语言、主要活动领域
-   ├── 可选上传头像
-   └── 选择目标受众（同行学者/行业从业者/普通大众/投资人/政策制定者）
-3. 方式 B：任务结束后自动创建（默认路径）
-   ├── 用户在首页/项目创建时不选 Speaker
-   ├── 系统在处理任务时从素材 + 提示词中提取风格特征
-   └── 任务完成后持久化为一条 Speaker memory
-4. 用户可在 /speakers 查看、编辑、删除自己的 Speaker memory
-   ├── 修改基础资料
-   └── 修改 AI 提取的风格字段（价值观、比喻、句式等）
-5. 可选上传过往材料或声音样本，用于校准画像（P1 支持声音克隆）
-6. 设置口吻滑块（学术严谨 ↔ 通俗口语；理性克制 ↔ 激情澎湃；简短直接 ↔ 详细展开）
-```
-
-### 11.2 创建项目并生成内容
+### 11.1 Create and Manage Speaker Memory
 
 ```
-1. 用户可选择已有 Speaker（可选）
-   ├── 选择后项目关联该 Speaker
-   └── 不选择时，系统会在任务结束后自动创建/关联
-2. 创建新项目，输入演讲标题/事件名/日期
-3. 选择数据驻留选项：Global 或 EU（通过 Cast AI）
-4. 上传本场演讲素材（任选一种或多种）
-   ├── 视频/音频
-   ├── 文字稿
-   ├── 幻灯片
-   └── 现场照片
-5. 输入提示词（instruction），表达本次产出意图
-6. 设置口吻参数
-   ├── 学术严谨 ↔ 通俗口语
-   ├── 理性克制 ↔ 激情澎湃
-   ├── 简短直接 ↔ 详细展开
-   └── 目标受众
-7. 选择输出类型
-   ├── 精彩片段数量（默认 3-5 个）
-   ├── 是否生成 LinkedIn 长帖（P0）
-   ├── 是否生成金句卡（P0）
-   ├── 是否生成多语言版本（P0：德/法/西/意）
-   └── 是否生成 Carousel（P1）
-8. 系统异步处理（显示进度：Analyze → Extract memory → Script → Review → Translate）
-9. 用户进入审校页面
+1. User logs in
+2. Method A: Manually create Speaker (optional)
+   ├── Enter name, title, language, primary activity field
+   ├── Optional avatar upload
+   └── Select target audience (peer scholars/industry practitioners/general public/investors/policymakers)
+3. Method B: Auto-create after task completion (default path)
+   ├── User doesn't select Speaker on home page / during project creation
+   ├── System extracts style characteristics from materials + prompts during task processing
+   └── After task completion, persists as a Speaker memory record
+4. User can view, edit, delete their Speaker memory at /speakers
+   ├── Modify basic info
+   └── Modify AI-extracted style fields (values, metaphors, sentence patterns, etc.)
+5. Optional upload of past materials or voice samples for persona calibration (P1 supports voice cloning)
+6. Set voice sliders (academic rigor ↔ casual spoken; rational restraint ↔ passionate; concise direct ↔ detailed expansion)
 ```
 
-### 11.3 审校与导出
+### 11.2 Home Page Task Creation & Content Generation
 
 ```
-1. 用户查看生成的 clips 列表（左侧列表 + 右侧预览）
-   ├── 每个 clip 显示：传播潜力分、时长、语言、状态
-   └── 右侧预览：脚本 + 字幕时间轴 + 画面建议
-2. 播放/预览每个 clip
-3. 编辑脚本、字幕、Hook（从 3 个备选中选择或自定义）
-4. 替换画面或 BGM（从上传素材中选择）
-5. 查看 LinkedIn 长帖、金句卡、多语言版本
-6. 提交反馈（结构化：Hook/风格/复杂度/事实/表达）
-7. 触发 Reviser Agent 局部重生成
-8. 确认后导出
-   ├── 文案（Markdown/TXT，含所有语言版本）
-   ├── 金句卡图片（PNG/JPG）
-   ├── 视频（P1：MP4，图片轮播 + 字幕 + BGM）
-   └── EU 合规证明（PDF，如选择 EU 驻留）
+1. User enters home page, sees input box
+2. Provide input (choose one or multiple combinations)
+   ├── Drag/drop or select files: video/audio/transcript/slides/images
+   └── Paste text or enter prompt in input box
+3. Configure outputs (all in toolbar below input box, all optional)
+   ├── Speaker: select existing Speaker or leave unselected
+   ├── Brand template: select existing template or leave unselected
+   ├── Tone: professional/thought leader/conversational/academic
+   └── Outputs: clips generated by default, optionally LinkedIn long-form / quote cards / multi-language, etc.
+4. Click generate button
+   ├── Frontend auto calls POST /projects to create Project
+   ├── Frontend auto calls POST /projects/{id}/assets to upload materials
+   └── Frontend auto calls POST /projects/{id}/generate to trigger async generation
+5. System processes asynchronously
+   ├── Worker processes Asset: ASR transcription / text extraction / visual image reading
+   └── Worker runs Generation: Analyzer → Script / LinkedIn / Quote Card / Summary / Blog
+6. User auto-redirects to project detail page to view generation results
+```
+
+### 11.3 Review & Export
+
+```
+1. User views generated clips list (left list + right preview)
+   ├── Each clip displays: virality potential score, duration, language, status
+   └── Right preview: script + subtitle timestamps + visual suggestions
+2. Play/preview each clip
+3. Edit script, subtitles, hook (select from 3 alternatives or customize)
+4. Replace visuals or BGM (select from uploaded materials)
+5. View LinkedIn long-form post, quote cards, multi-language versions
+6. Submit feedback (structured: hook/style/complexity/facts/expression)
+7. Trigger Reviser Agent local regeneration
+8. Confirm and export
+   ├── Copy (Markdown/TXT, including all language versions)
+   ├── Quote card images (PNG/JPG)
+   ├── Video (P1: MP4, image carousel + subtitles + BGM)
+   └── EU compliance certificate (PDF, if EU residency selected)
 ```
 
 ---
 
-## 12. 输出规格
+## 12. Output Specifications
 
-### 12.1 竖屏精彩片段
+### 12.1 Vertical Highlight Clips
 
-| 属性 | 规格 |
+| Attribute | Specification |
 |:---|:---|
-| 画幅 | 9:16 |
-| 分辨率 | 1080 × 1920 |
-| 时长 | 15-60 秒，默认 30 秒 |
-| 字幕 | 每行不超过 12 字，底部居中 |
-| 画面 | 演讲者特写 / 现场照片 / 幻灯片页 / 动态文字 |
-| 配乐 | 按情绪标签匹配 |
+| Aspect ratio | 9:16 |
+| Resolution | 1080 × 1920 |
+| Duration | 15-60 seconds, default 30 seconds |
+| Subtitles | No more than 12 characters per line, bottom-centered |
+| Visuals | Speaker close-up / event photos / slide pages / dynamic text |
+| Music | Matched by mood tags |
 
-### 12.2 Hook / 标题
+### 12.2 Hook / Title
 
-- 每个 clip 提供 3 个备选标题
-- 前 3 秒字幕必须有冲突、反常识或强数据
-- 标题长度适合各平台展示
+- Each clip provides 3 alternative titles
+- First 3 seconds of subtitles must have conflict, counter-intuition, or strong data
+- Title length suitable for display on all platforms
 
-### 12.3 LinkedIn 长帖
+### 12.3 LinkedIn Long-form Post
 
-| 属性 | 规格 |
+| Attribute | Specification |
 |:---|:---|
-| 长度 | 150-300 英文词 / 300-600 中文字 |
-| 结构 | Hook → 核心观点 → 个人洞察 → 行动号召 |
-| 口吻 | 保持 Speaker 风格，偏专业但可读 |
-| 标签 | 自动生成 3-5 个相关话题标签 |
-| 多语言 | 同步生成德/法/西/意版本 |
+| Length | 150-300 English words / 300-600 Chinese characters |
+| Structure | Hook → Core insight → Personal take → Call to action |
+| Voice | Maintain Speaker style, professional but readable |
+| Hashtags | Auto-generate 3-5 relevant topic tags |
+| Multi-language | Simultaneously generate German/French/Spanish/Italian versions |
 
-### 12.4 金句卡
+### 12.4 Quote Cards
 
-| 属性 | 规格 |
+| Attribute | Specification |
 |:---|:---|
-| 画幅 | 1:1（LinkedIn/Instagram）或 4:5 或 9:16（Stories） |
-| 内容 | 一句金句 + 署名 + 日期 |
-| 风格 | 3-5 套模板可选（科技/学术/极简/深色/温暖） |
-| 输出 | PNG / JPG，高清 |
-| 多语言 | 同步生成多语言版本 |
+| Aspect ratio | 1:1 (LinkedIn/Instagram) or 4:5 or 9:16 (Stories) |
+| Content | One quote + attribution + date |
+| Style | 3-5 template options (tech/academic/minimal/dark/warm) |
+| Output | PNG / JPG, high resolution |
+| Multi-language | Simultaneously generate multi-language versions |
 
 ### 12.5 Carousel
 
-| 属性 | 规格 |
+| Attribute | Specification |
 |:---|:---|
-| 页数 | 5-8 页 |
-| 第一页 | 标题 + 视觉 |
-| 中间页 | 核心论点 / 金句 |
-| 最后一页 | CTA + 署名 + 二维码/链接 |
-| 适用平台 | LinkedIn / Instagram |
+| Pages | 5-8 pages |
+| First page | Title + visual |
+| Middle pages | Core arguments / quotes |
+| Last page | CTA + attribution + QR code/link |
+| Platforms | LinkedIn / Instagram |
 
-### 12.6 多语言版本
+### 12.6 Multi-language Versions
 
-| 属性 | 规格 |
+| Attribute | Specification |
 |:---|:---|
-| P0 语言 | 中文、英文、德文、法文、西班牙文、意大利文 |
-| 翻译质量 | M3 原生翻译，保留原意、冲击力和 Speaker 风格 |
-| 审校支持 | 原文+译文并排，逐句编辑 |
-| 翻译置信度 | 低置信度内容高亮提示 |
-| 配音 | P1：通用 TTS；P2：声音克隆 |
+| P0 languages | Chinese, English, German, French, Spanish, Italian |
+| Translation quality | M3 native translation, preserves original meaning, impact, and Speaker style |
+| Review support | Source + translation side-by-side, sentence-by-sentence editing |
+| Translation confidence | Low-confidence content highlighted for attention |
+| Dubbing | P1: general TTS; P2: voice cloning |
 
 ---
 
-## 13. API 概要（仅示意）
+## 13. API Overview (Illustrative Only)
 
-### 13.1 Speaker 管理
+### 13.1 Speaker Management
 
 ```
-POST   /speakers              # 手动创建（可选）
-GET    /speakers              # 当前用户的 Speaker 列表（按 user_id 隔离）
+POST   /speakers              # Manual creation (optional)
+GET    /speakers              # Current user's Speaker list (isolated by user_id)
 GET    /speakers/{id}
 PUT    /speakers/{id}
 DELETE /speakers/{id}
 ```
 
-> 当用户在创建项目时未选择 Speaker，系统会在任务处理完成后自动创建一条 Speaker 记录，并关联到该项目。
+> When user doesn't select a Speaker during project creation, the system will auto-create a Speaker record after task processing and associate it with the project.
 
-### 13.2 项目管理
+### 13.2 Project Management
 
 ```
 POST   /projects
@@ -865,7 +868,7 @@ PUT    /projects/{id}
 DELETE /projects/{id}
 ```
 
-### 13.3 素材上传
+### 13.3 Material Upload
 
 ```
 POST /projects/{id}/assets
@@ -873,293 +876,293 @@ GET  /projects/{id}/assets
 DELETE /projects/{id}/assets/{asset_id}
 ```
 
-### 13.4 生成任务
+### 13.4 Generation Tasks
 
 ```
-POST /projects/{id}/generate          # 触发生成任务
-GET  /projects/{id}/generate/status   # 查询生成状态
+POST /projects/{id}/generate          # Trigger generation task
+GET  /projects/{id}/generate/status   # Query generation status
 POST /projects/{id}/clips/{id}/regenerate
 ```
 
-### 13.5 审校与导出
+### 13.5 Review & Export
 
 ```
-PUT  /clips/{id}                      # 编辑 clip
-PUT  /derivatives/{id}                # 编辑衍生内容
-POST /projects/{id}/export            # 批量导出
+PUT  /clips/{id}                      # Edit clip
+PUT  /derivatives/{id}                # Edit derivative content
+POST /projects/{id}/export            # Batch export
 ```
 
 ---
 
-## 14. UI/UX 要求
+## 14. UI/UX Requirements
 
-### 14.1 上传页
+### 14.1 Upload Page
 
-- 清晰的素材类型分区（视频/音频/文字稿/幻灯片/照片）
-- 拖拽上传 + 点击上传
-- 显示每个素材的处理状态（转写中/解析中/已完成）
-- **提示文案**："至少传一种，多传效果更好。文字稿 + 现场照片即可出初稿。"
-- **EU 数据驻留选项**：创建项目时显式选择，勾选后显示 GDPR 合规说明
+- Clear material type sections (video/audio/transcript/slides/photos)
+- Drag-and-drop upload + click upload
+- Display processing status for each material (transcribing/parsing/completed)
+- **Hint copy**: "Upload at least one type, more is better. Transcript + event photos can produce a first draft."
+- **EU data residency option**: Explicitly selectable during project creation, displays GDPR compliance notice when checked
 
-### 14.2 Speaker 风格画像页
+### 14.2 Speaker Style Persona Page
 
-- 左侧：AI 生成的画像
-- 右侧：用户可编辑的字段
-- 提供"重新分析"按钮
+- Left: AI-generated persona
+- Right: User-editable fields
+- Provide "re-analyze" button
 
-### 14.3 生成结果页
+### 14.3 Generation Results Page
 
-参考 OpusClip 的"左侧列表 + 右侧预览"布局：
+Reference OpusClip's "left list + right preview" layout:
 
-- **左侧 clip 列表**：显示传播潜力分、时长、当前状态
-- **右侧预览区**：视频预览 + 字幕时间轴 + 编辑区
-- **顶部 tab**：视频 / LinkedIn / 金句卡 / 多语言
-- **操作按钮**：导出、重新生成、删除
-- **排序/筛选**：按分数、时长、状态筛选
+- **Left clip list**: Displays virality potential score, duration, current status
+- **Right preview area**: Video preview + subtitle timestamps + editing area
+- **Top tabs**: Video / LinkedIn / Quote cards / Multi-language
+- **Action buttons**: Export, regenerate, delete
+- **Sort/filter**: Filter by score, duration, status
 
-### 14.4 审校页
+### 14.4 Review Page
 
-参考 Descript 的文本编辑体验：
+Reference Descript's text-editing experience:
 
-- **脚本编辑器**：按时间轴展示字幕，每句可独立编辑
-- **字幕即视频**：修改字幕文案后，视频字幕同步更新
-- **画面替换**：缩略图网格，从上传素材中选择
-- **BGM 替换**：按情绪分类（沉稳/激昂/悬疑/希望）
-- **标题选择**：A/B/C 三个备选 + 自定义
-- **反馈按钮**：对 clip 整体、hook、字幕、风格分别提交不满意原因
+- **Script editor**: Display subtitles by timeline, each sentence independently editable
+- **Subtitles = video**: After editing subtitle copy, video subtitles sync update
+- **Visual replacement**: Thumbnail grid, select from uploaded materials
+- **BGM replacement**: Categorized by mood (calm/passionate/suspenseful/hopeful)
+- **Title selection**: A/B/C three alternatives + custom
+- **Feedback buttons**: Submit dissatisfaction reasons for clip overall, hook, subtitles, style separately
 
-### 14.5 从竞品借鉴的 UX 要点
+### 14.5 UX Borrowed from Competitors
 
-| 借鉴点 | 来源 | P0 是否采纳 | 说明 |
+| Borrow | Source | P0 Adopted? | Description |
 |:---|:---|:---|:---|
-| 上传即处理，无需复杂配置 | OpusClip | ✅ | 用户上传后自动进入处理流程 |
-| AI 生成 + 评分排序 | OpusClip | ✅ | 每个 clip 显示传播潜力分 |
-| 左侧列表 + 右侧预览 | OpusClip | ✅ | 标准审校布局 |
-| Hook/标题 A/B 测试 | OpusClip | ✅ | 每个 clip 提供 3 个备选标题 |
-| 自然语言筛选片段 | OpusClip | ❌ P1 | "找出讨论 X 的片段" |
-| 文本编辑视频 | Descript | ❌ P1 | 改字幕 = 改视频，P0 只做字幕编辑 |
-| AI 多步编辑指令 | Descript | ❌ P1 | 类似 "把这一集打磨成 YouTube 版" |
-| 多语言翻译配音 | Descript | ❌ P2 | 后续扩展 |
+| Upload = process, no complex config | OpusClip | ✅ | After user upload, auto-enters processing flow |
+| AI generate + score sort | OpusClip | ✅ | Each clip displays virality potential score |
+| Left list + right preview | OpusClip | ✅ | Standard review layout |
+| Hook/title A/B testing | OpusClip | ✅ | Each clip provides 3 alternative titles |
+| Natural language segment filter | OpusClip | ❌ P1 | "Find segments discussing X" |
+| Text edits video | Descript | ❌ P1 | Edit subtitle = edit video, P0 only does subtitle editing |
+| AI multi-step editing instructions | Descript | ❌ P1 | Similar to "polish this episode into YouTube version" |
+| Multi-language translation dubbing | Descript | ❌ P2 | Future extension |
 
 ---
 
-## 15. 成功指标
+## 15. Success Metrics
 
-### 15.1 内容质量
+### 15.1 Content Quality
 
-| 指标 | 目标 | 测量方式 |
+| Metric | Target | Measurement |
 |:---|:---|:---|
-| 用户编辑率 | < 50% | 统计用户修改脚本的 clip 比例 |
-| 用户保存率 | > 80% | 生成后用户保存/导出的比例 |
-| 多语言采纳率 | > 60% | 用户导出多语言版本的比例 |
-| 风格匹配度 | > 7/10 | 用户评分"是否像本人" |
+| User edit rate | < 50% | Statistically proportion of clips where user modified the script |
+| User save rate | > 80% | Proportion of users who save/export after generation |
+| Multi-language adoption rate | > 60% | Proportion of users who export multi-language versions |
+| Style match score | > 7/10 | User rating "does this sound like me" |
 
-### 15.2 效率提升
+### 15.2 Efficiency Gains
 
-| 指标 | 目标 |
+| Metric | Target |
 |:---|:---|
-| 单项目处理时间 | < 10 分钟（不含渲染） |
-| 人工审校时间 | < 15 分钟 / 项目 |
-| 相比纯人工剪辑 | 节省 80% 以上时间 |
-| 多语言生成时间 | < 2 分钟 / 语言 |
+| Single project processing time | < 10 minutes (excluding rendering) |
+| Human review time | < 15 minutes / project |
+| Compared to pure manual editing | Save 80%+ time |
+| Multi-language generation time | < 2 minutes / language |
 
-### 15.3 用户粘性（欧洲市场）
+### 15.3 User Retention (European Market)
 
-| 指标 | 目标 |
+| Metric | Target |
 |:---|:---|
-| 欧洲种子客户数（Q3） | 5-10 个付费试用 |
-| 单用户月均项目数 | > 3 |
-| 多语言功能使用率 | > 60% |
-| EU 数据驻留选择率 | > 40%（欧洲用户） |
+| European seed customers (Q3) | 5-10 paid trials |
+| Monthly projects per user | > 3 |
+| Multi-language feature usage | > 60% |
+| EU data residency selection rate | > 40% (European users) |
 | NPS | > 40 |
 
 ---
 
-## 16. 风险与假设
+## 16. Risks & Assumptions
 
-### 16.1 风险
+### 16.1 Risks
 
-| 风险 | 影响 | 缓解措施 |
+| Risk | Impact | Mitigation |
 |:---|:---|:---|
-| MiniMax M3 对长文本/多模态理解不稳定 | 输出质量差 | 先做文字稿驱动，多模态作为辅助；Agent Review 迭代修正 |
-| 声音克隆效果不达预期 | 多语言版本不可用 | 默认使用通用 TTS，克隆作为增值 |
-| 视频渲染成本高/慢 | 用户体验差 | P0 先用图片轮播+字幕，不做复杂渲染 |
-| **链接拉取依赖第三方（yt-dlp 类）** | 站点改版/反爬导致拉取失败；版权风险 | 拉取失败回退到手动上传；明确用户授权责任；非核心来源延后 |
-| **ASR 是外部依赖（Whisper 类，MiniMax 不提供）** | 增加一层服务/成本；多语言准确率波动 | 文字稿输入可绕过 ASR；选成熟 ASR 服务；脏稿走人工/Agent 修正 |
-| 版权问题（音乐/图片） | 法律风险 | 使用免版权素材，明确用户责任 |
-| 用户不会写口吻设定 | 输出不符合预期 | 提供默认模板和预览功能 |
-| GDPR 合规审计 | 法律风险 | 通过 Cast AI Kimchi 提供 EU 部署；准备合规文档；定期审计 |
-| 数据跨境传输风险（Schrems II） | 欧洲机构采购受阻 | EU 项目数据不出 EU；提供数据处理证明 |
-| 欧洲机构采购流程长 | 商业化慢 | 早期聚焦种子客户和学术会议主办方 |
+| MiniMax M3 instability on long-text/multimodal understanding | Poor output quality | Start with transcript-driven, multimodal as auxiliary; Agent Review iterative correction |
+| Voice cloning quality below expectations | Multi-language versions unavailable | Default to general TTS, cloning as premium |
+| Video rendering cost/speed | Poor UX | P0 start with image carousel + subtitles, no complex rendering |
+| **Link fetching depends on third-party (yt-dlp-style)** | Site changes/anti-scraping cause fetch failures; copyright risk | On fetch failure, fallback to manual upload; clarify user authorization responsibility; defer non-core sources |
+| **ASR is external dependency (Whisper-style, MiniMax doesn't provide)** | Adds service/cost layer; multi-language accuracy fluctuation | Transcript input bypasses ASR; choose mature ASR service; dirty transcripts go through manual/Agent correction |
+| Copyright issues (music/images) | Legal risk | Use royalty-free materials, clarify user responsibility |
+| Users can't write voice settings | Output doesn't meet expectations | Provide default templates and preview features |
+| GDPR compliance audit | Legal risk | EU deployment via Cast AI Kimchi; prepare compliance docs; regular audits |
+| Cross-border data transfer risk (Schrems II) | European institutional procurement blocked | EU project data stays in EU; provide data processing proof |
+| European institutional procurement cycle is long | Slow commercialization | Early focus on seed customers and academic conference organizers |
 
-### 16.2 假设
+### 16.2 Assumptions
 
-- 用户上传的素材音质/画质可接受（或提供文字稿）
-- 演讲内容有明确可传播的观点和结构
-- 用户愿意花 5-10 分钟做最终审校
-- MiniMax M3 在 512K 上下文内稳定输出结构化 JSON
-- 欧洲机构用户接受"AI 生成 + 人工审校"的工作流
-- Cast AI Kimchi 的 EU 部署稳定性和性能满足生产需求
-
----
-
-## 17. 路线图
-
-详见 [SCHEDULE.md](./SCHEDULE.md) 的详细排期。
-
-### Phase 1：P0 MVP（6 周）
-
-**目标**：跑通"上传 → AI 生成脚本 → 人工审校 → 导出"核心闭环，验证欧洲市场产品-市场契合。
-
-**技术栈**：FastAPI + MiniMax M3 + 手搓 Agent + TanStack Start + PostgreSQL + 本地存储。
-
-**包含**：
-- Speaker Profile 创建 + 风格画像（Persona Agent）
-- 文字稿 + 图片上传（P0 核心输入）
-- MiniMax M3 生成：3 个 clip 脚本 + LinkedIn 长帖 + 金句卡 + 多语言版本（德/法/西/意）
-- Agent 闭环：Script → Review → Reviser（自评迭代）
-- 人工审校 + 反馈重生成（HITL）
-- 导出文案、金句卡图片
-- EU 数据驻留选项（通过 Cast AI Kimchi）
-- GDPR 合规说明
-
-**不包含**：幻灯片解析、声音克隆、复杂多轨剪辑、社媒发布。
-
-> **v0.4 调整**：竖屏短片成片（含 ASR + Range 流式端点 + Remotion 渲染 + 文字稿编辑器）已**提升为 MVP 必须主流程**，不再属于 Phase 2。对象存储仍按 ADR-011 留到规模化。详见 ADR-016 / VIDEO_EDITOR.md。
-
-### Phase 2：P1（6-8 周）
-
-**目标**：产品化准备，扩展输入和输出能力，提升用户体验。
-
-- 视频/音频上传 + 自动转写（ASR）
-- 幻灯片解析（PDF/PPT/PPTX → 图片 + 文本）
-- 简单视频渲染（图片轮播 + 字幕 + BGM）
-- 声音样本上传 + 通用 TTS 配音
-- 更多字幕样式、B-roll、版式切换
-- 品牌套件
-- Carousel 生成
-- 批量导出
-- 对象存储迁移（S3/R2）
-- 多语言界面（英/德/法/西/意）
-
-### Phase 3：P2（8-12 周）
-
-**目标**：SaaS 化，规模化欧洲市场。
-
-- 用户体系与权限（多租户）
-- 计费系统（欧洲定价高于美国 20-30%）
-- 直接发布到 LinkedIn（API 接入）
-- 声音克隆（P2 谨慎推进，欧洲用户敏感）
-- AI 生成动态 B-roll
-- 数据分析（传播效果追踪）
-- 更多平台版式
-- 欧洲本地销售团队（伦敦/柏林）
-- 与学术会议主办方合作（批量获客）
+- User-uploaded material audio/video quality is acceptable (or transcript provided)
+- Talk content has clear, shareable viewpoints and structure
+- User is willing to spend 5-10 minutes on final review
+- MiniMax M3 stably outputs structured JSON within 512K context
+- European institutional users accept the "AI generate + human review" workflow
+- Cast AI Kimchi's EU deployment stability and performance meet production needs
 
 ---
 
-## 18. 术语表
+## 17. Roadmap
 
-| 术语 | 说明 |
+See [SCHEDULE.md](./SCHEDULE.md) for detailed schedule.
+
+### Phase 1: P0 MVP (6 weeks)
+
+**Goal**: Run through the core loop of "upload → AI generate scripts → human review → export", validating product-market fit in Europe.
+
+**Tech stack**: FastAPI + MiniMax M3 + hand-rolled Agent + TanStack Start + PostgreSQL + local storage.
+
+**Includes**:
+- Speaker Profile creation + style persona (Persona Agent)
+- Transcript + image upload (P0 core input)
+- MiniMax M3 generation: 3 clip scripts + LinkedIn long-form post + quote cards + multi-language versions (German/French/Spanish/Italian)
+- Agent closed loop: Script → Review → Reviser (self-review iteration)
+- Human review + feedback regeneration (HITL)
+- Export copy, quote card images
+- EU data residency option (via Cast AI Kimchi)
+- GDPR compliance documentation
+
+**Excludes**: slide parsing, voice cloning, complex multi-track editing, social media publishing.
+
+> **v0.4 adjustment**: Vertical clip output + editor (including ASR + Range streaming endpoint + Remotion rendering + Descript-style transcript editor) has been **elevated to MVP mandatory main flow**, no longer in Phase 2. Object storage still deferred to scale per ADR-011. See ADR-016 / VIDEO_EDITOR.md.
+
+### Phase 2: P1 (6-8 weeks)
+
+**Goal**: Productization preparation, expand input and output capabilities, improve UX.
+
+- Video/audio upload + auto-transcription (ASR)
+- Slide parsing (PDF/PPT/PPTX → images + text)
+- Simple video rendering (image carousel + subtitles + BGM)
+- Voice sample upload + general TTS dubbing
+- More subtitle styles, B-roll, format switching
+- Brand kit
+- Carousel generation
+- Batch export
+- Object storage migration (S3/R2)
+- Multi-language UI (English/German/French/Spanish/Italian)
+
+### Phase 3: P2 (8-12 weeks)
+
+**Goal**: SaaS-ify, scale European market.
+
+- User system and permissions (multi-tenant)
+- Billing system (European pricing 20-30% higher than US)
+- Direct publishing to LinkedIn (API integration)
+- Voice cloning (P2 cautious rollout, European users are sensitive)
+- AI-generated dynamic B-roll
+- Analytics (virality tracking)
+- More platform formats
+- European local sales team (London/Berlin)
+- Partnership with academic conference organizers (batch customer acquisition)
+
+---
+
+## 18. Glossary
+
+| Term | Description |
 |:---|:---|
-| Repurposing | 将已有内容重新加工，适配不同平台和形式 |
-| Speaker Profile | 演讲者档案，包含风格画像、口吻设置、声音样本 |
-| Clip | 生成的精彩片段 |
-| Hook | 视频/帖子开头吸引注意力的句子 |
-| Carousel | 多页图文，常见于 LinkedIn/Instagram |
-| SRT | 字幕文件格式 |
-| Persona | 人物风格画像 |
-| B-roll | 辅助画面素材 |
-| HITL | Human-in-the-Loop，人工反馈闭环 |
-| EU 数据驻留 | 通过 Cast AI Kimchi 在 EU 区域部署，数据不出 EU |
-| GDPR | 欧盟通用数据保护条例 |
-| GPAI | General Purpose AI，通用 AI 模型（EU AI Act 术语） |
-| Virality Score | 传播潜力分（0-100），预测内容的传播潜力 |
+| Repurposing | Reprocessing existing content to adapt to different platforms and formats |
+| Speaker Profile | Speaker profile, including style persona, voice settings, voice samples |
+| Clip | Generated highlight segment |
+| Hook | Attention-grabbing opening sentence for video/post |
+| Carousel | Multi-page images + text, common on LinkedIn/Instagram |
+| SRT | Subtitle file format |
+| Persona | Persona style profile |
+| B-roll | Supplementary visual material |
+| HITL | Human-in-the-Loop, human feedback closed loop |
+| EU data residency | Deployment in EU region via Cast AI Kimchi, data stays in EU |
+| GDPR | EU General Data Protection Regulation |
+| GPAI | General Purpose AI, general AI model (EU AI Act term) |
+| Virality Score | Virality potential score (0-100), predicts content's viral potential |
 
 ---
 
-## 19. 待决策事项
+## 19. Open Decisions
 
-| 事项 | 建议 | 决策者 | 状态 |
+| Item | Proposal | Decision Maker | Status |
 |:---|:---|:---|:---|
-| 产品名称 | SpeechRepurposer（内部可调整） | 左总 | 待定 |
-| Agent 框架选型 | **已决策：P0 手搓** | 技术 | **已决策** |
-| 是否支持 URL 输入 | 本期不做，后续可作为补充 | 产品/技术 | 待定 |
-| 首期支持语言 | 中英 + 德/法/西/意（P0） | 产品 | **已决策** |
-| EU 数据驻留 | 通过 Cast AI Kimchi（P0） | 技术 | **已决策** |
-| 声音克隆 | P1 通用 TTS，P2 克隆（欧洲敏感） | 产品 | **已决策** |
-| 是否接入社媒发布 API | P2 再考虑 | 产品 | 待定 |
-| 付费模式 | 本期不设计 | 左总 | 待定 |
-| 欧洲公司注册 | Q3 启动英国 Limited Company | 运营 | 待定 |
-| 与学术会议合作 | Q3 接触 ECA、EMBO、伦敦科技周 | 市场 | 待定 |
+| Product name | SpeechRepurposer (internal, adjustable) | Zuo | TBD |
+| Agent framework selection | **Decided: P0 hand-rolled** | Tech | **Decided** |
+| URL input support | Not this cycle, can be added later | Product/Tech | TBD |
+| First-phase supported languages | Chinese/English + German/French/Spanish/Italian (P0) | Product | **Decided** |
+| EU data residency | Via Cast AI Kimchi (P0) | Tech | **Decided** |
+| Voice cloning | P1 general TTS, P2 cloning (Europe-sensitive) | Product | **Decided** |
+| Social media publishing API integration | Consider in P2 | Product | TBD |
+| Pricing model | Not designed this cycle | Zuo | TBD |
+| European company registration | Q3 launch UK Limited Company | Operations | TBD |
+| Academic conference partnerships | Q3 contact ECA, EMBO, London Tech Week | Marketing | TBD |
 
 ---
 
-## 20. Agent 框架选型决策
+## 20. Agent Framework Selection Decision
 
-### 20.1 为什么需要 Agent 流程
+### 20.1 Why Agent Workflow is Needed
 
-用户说"不满意"通常不是整体重做，而是局部问题：
+When users say "not satisfied", it's usually not a full redo, but a local issue:
 
-| 不满意类型 | 处理方式 |
+| Dissatisfaction Type | Handling |
 |:---|:---|
-| 整体风格不像本人 | 回到 Speaker Profile 重新校准 |
-| 某个 clip 不够抓人 | 只重新生成这个 clip |
-| Hook 不行 | 只重新生成标题/Hook |
-| 翻译不自然 | 只重新翻译这段 |
-| 画面和字幕不匹配 | 只换画面提示或 B-roll |
-| 某个金句不够有力 | 只重新生成金句卡 |
-| 事实不准确 | 提示用户检查源素材，不自动修正 |
-| 整体太复杂/太简单 | 按受众重新生成 |
+| Overall style doesn't sound like me | Return to Speaker Profile for recalibration |
+| A certain clip isn't engaging enough | Only regenerate this clip |
+| Hook doesn't work | Only regenerate title/hook |
+| Translation unnatural | Only retranslate this segment |
+| Visuals don't match subtitles | Only change visual prompts or B-roll |
+| A certain quote isn't powerful enough | Only regenerate quote card |
+| Factually inaccurate | Prompt user to check source materials, do not auto-correct |
+| Overall too complex/too simple | Regenerate by audience |
 
-因此系统不能是"一次生成就结束"，必须是：**生成初稿 → 用户反馈/自评 → 定位问题 → 局部重生成 → 用户确认**。
+Therefore the system cannot be "generate once and done", it must be: **generate draft → user feedback/self-review → locate issue → local regenerate → user confirm**.
 
-### 20.2 候选方案
+### 20.2 Candidate Frameworks
 
-| 框架 | 核心定位 | 适合本项目程度 |
+| Framework | Core Positioning | Suitability for This Project |
 |:---|:---|:---|
-| **Pydantic AI** | 类型安全的 LLM Agent | 高，但需写 MiniMax Custom Model |
-| **LangGraph** | 复杂状态机工作流 | 高，HITL 最强，但学习曲线陡 |
-| **ControlFlow** | 结构化 Agent 任务流 | 高，代码最清晰，但生态小 |
-| **CrewAI** | 角色扮演型多 Agent | 中，API 简单但控制力弱 |
-| **dspy** | LLM 程序优化 | 中，适合持续优化 prompt |
-| **手搓** | 自研 Agent 编排器 | 高，完全可控 |
+| **Pydantic AI** | Type-safe LLM Agent | High, but needs MiniMax Custom Model |
+| **LangGraph** | Complex state machine workflow | High, strongest HITL, but steep learning curve |
+| **ControlFlow** | Structured Agent task flow | High, clearest code, but small ecosystem |
+| **CrewAI** | Role-playing multi-Agent | Medium, simple API but weak control |
+| **dspy** | LLM program optimization | Medium, suitable for continuous prompt optimization |
+| **Hand-rolled** | Self-developed Agent orchestrator | High, fully controllable |
 
-### 20.3 手搓 vs Pydantic AI 对比
+### 20.3 Hand-rolled vs Pydantic AI Comparison
 
-| 维度 | 手搓 | Pydantic AI |
+| Dimension | Hand-rolled | Pydantic AI |
 |:---|:---|:---|
-| 开发速度（P0） | 快，按业务直接写 | 前期稍慢，要写 MiniMax adapter |
-| 学习成本 | 低 | 中 |
-| 类型安全 | 自己用 Pydantic 校验 | 框架内置，更优雅 |
-| MiniMax 兼容性 | 直接调用，零适配 | 需 Custom Model adapter |
-| 调试/可观测性 | 白盒 | 黑盒一些 |
-| 模块解耦 | 完全可控 | 受框架限制 |
-| 未来扩展 | 代码可能变乱 | 更整洁 |
-| 框架风险 | 无 | 新框架，可能有坑 |
+| Development speed (P0) | Fast, write directly by business | Slightly slower upfront, need MiniMax adapter |
+| Learning cost | Low | Medium |
+| Type safety | Self-use Pydantic validation | Framework built-in, more elegant |
+| MiniMax compatibility | Direct call, zero adaptation | Needs Custom Model adapter |
+| Debug/observability | White box | Somewhat black box |
+| Module decoupling | Fully controllable | Constrained by framework |
+| Future extensibility | Code may get messy | Cleaner |
+| Framework risk | None | New framework, potential issues |
 
-### 20.4 决策结论
+### 20.4 Decision Conclusion
 
-**P0 采用"手搓 Agent 工作流"方案。**
+**P0 adopts "hand-rolled Agent workflow" solution.**
 
-理由：
-1. 项目场景明确，单模型（MiniMax M3），不需要框架的 provider 抽象
-2. Workflow 明确（persona → analyze → script → review → revise → HITL），不是开放式 Agent
-3. Prompt 需要精细控制，框架模板可能不够灵活
-4. MiniMax M3 需要适配，框架优势被削弱
-5. 团队熟悉 FastAPI/Pydantic，手搓就是把这些能力组合起来
-6. P0 的核心是验证"内容生成质量"，不是验证"Agent 框架能力"
+Reasons:
+1. Project scenario is clear, single model (MiniMax M3), doesn't need framework's provider abstraction
+2. Workflow is clear (persona → analyze → script → review → revise → HITL), not an open-ended Agent
+3. Prompts need fine control, framework templates may not be flexible enough
+4. MiniMax M3 needs adaptation, framework advantage is weakened
+5. Team is familiar with FastAPI/Pydantic, hand-rolled is just combining these capabilities
+6. P0's core is validating "content generation quality", not validating "Agent framework capability"
 
-**未来**：如果 P1/P2 workflow 复杂到代码难以维护，再评估迁移到 Pydantic AI 或 LangGraph。
+**Future**: If P1/P2 workflow becomes too complex to maintain in code, evaluate migration to Pydantic AI or LangGraph.
 
-### 20.5 手搓架构建议
+### 20.5 Hand-rolled Architecture Recommendation
 
 ```
 speech-repurposer/
-├── api/                    # FastAPI 路由
+├── api/                    # FastAPI routes
 │   └── routes.py
-├── core/                   # 业务核心
-│   ├── workflow.py         # Workflow 编排器
+├── core/                   # Business core
+│   ├── workflow.py         # Workflow orchestrator
 │   ├── agents/             # Agent steps
 │   │   ├── persona.py
 │   │   ├── analyzer.py
@@ -1168,49 +1171,49 @@ speech-repurposer/
 │   │   ├── reviser.py
 │   │   ├── linkedin.py
 │   │   └── quote_card.py
-│   └── prompts/            # Jinja2 模板
+│   └── prompts/            # Jinja2 templates
 │       ├── persona.j2
 │       ├── script.j2
 │       ├── review.j2
 │       └── revise.j2
 ├── clients/
-│   └── minimax.py          # MiniMax M3 封装
+│   └── minimax.py          # MiniMax M3 wrapper
 ├── models/
-│   └── schemas.py          # Pydantic 模型
+│   └── schemas.py          # Pydantic models
 ├── state/
-│   └── store.py            # 数据库/状态管理
+│   └── store.py            # Database/state management
 └── main.py
 ```
 
-### 20.6 关键设计点
+### 20.6 Key Design Points
 
-1. **每个 Agent step 都是纯函数**：输入 context + prompt，输出 Pydantic model
-2. **统一 MiniMax client**：封装调用、JSON 清洗、重试、错误处理
-3. **Workflow 记录每步状态**：便于调试和 HITL 恢复
-4. **用户反馈结构化**：不是自由文本，而是选择原因 + 可选补充说明
-5. **版本历史**：每次重生成保存旧版本，支持 A/B 对比和回滚
+1. **Each Agent step is a pure function**: input context + prompt, output Pydantic model
+2. **Unified MiniMax client**: encapsulates calling, JSON cleaning, retry, error handling
+3. **Workflow records each step's state**: facilitates debugging and HITL recovery
+4. **User feedback is structured**: not free text, but select reason + optional supplementary note
+5. **Version history**: each regeneration saves old version, supports A/B comparison and rollback
 
-### 20.7 依赖库（非框架）
+### 20.7 Dependency Libraries (Non-Framework)
 
-手搓不代表从零开始，可以使用这些库：
+Hand-rolled doesn't mean from scratch, these libraries can be used:
 
-| 用途 | 库 |
+| Purpose | Library |
 |:---|:---|
-| HTTP 调用 | httpx |
-| 数据校验 | pydantic |
-| 重试机制 | tenacity |
-| Prompt 模板 | jinja2 |
-| 异步任务 | asyncio / 任务队列 |
-| 日志 | structlog / logging |
-| 数据库 | SQLAlchemy 等 |
+| HTTP calls | httpx |
+| Data validation | pydantic |
+| Retry mechanism | tenacity |
+| Prompt templates | jinja2 |
+| Async tasks | asyncio / task queue |
+| Logging | structlog / logging |
+| Database | SQLAlchemy etc. |
 
 ---
 
-## 21. 文档历史
+## 21. Document History
 
-| 版本 | 日期 | 修改内容 | 作者 |
+| Version | Date | Changes | Author |
 |:---|:---|:---|:---|
-| v0.1 | 2026/06/22 | 初版 PRD（通用版） | 产品团队 |
-| v0.2 | 2026/06/22 | 增加 Agent 框架选型决策、技术架构细化 | 技术团队 |
-| v0.3 | 2026/06/24 | 欧洲版：融入市场调研、多语言 P0、EU 数据驻留、Agent 工作流、欧洲用户画像、路线图调整 | 产品团队 + 市场调研组 |
-| v0.4 | 2026/06/27 | 竖屏短片成片+编辑器定型（提升为 MVP 主流程）：clip-spec 契约 + Remotion 第一渲染器 + Descript 式文字稿编辑；ASR 提为硬前置（视频需可流式播放，本地 FS + Range 即可；对象存储仍留规模化）（见 ADR-016 / VIDEO_EDITOR.md） | 技术团队 |
+| v0.1 | 2026/06/22 | Initial PRD (General Edition) | Product Team |
+| v0.2 | 2026/06/22 | Added Agent framework selection decision, refined technical architecture | Tech Team |
+| v0.3 | 2026/06/24 | Europe Edition: incorporated market research, multi-language P0, EU data residency, Agent workflow, European user personas, roadmap adjustment | Product Team + Market Research Team |
+| v0.4 | 2026/06/27 | Vertical clip output + editor finalized (elevated to MVP main flow): clip-spec contract + Remotion first renderer + Descript-style transcript editor; ASR elevated to hard prerequisite (video needs streamable playback, local FS + Range sufficient; object storage still deferred to scale) (see ADR-016 / VIDEO_EDITOR.md) | Tech Team |

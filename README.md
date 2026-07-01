@@ -1,204 +1,216 @@
 # Repurposer
 
-把一场演讲的原始素材（视频、音频、文字稿、幻灯片、照片）自动转化为适合多平台传播的短视频、社媒文案、金句卡和多语言版本。
+Automatically transform raw speech materials (video, audio, transcripts, slides, photos) into short-form videos, social media copy, quote cards, and multilingual versions for multi-platform distribution.
 
-## 核心能力
+## Core Capabilities
 
-- **竖屏成片**：真人录像 → 裁段+烧字幕；**无录像也能出片**——纯音频/图片/幻灯片做成 audiogram/静帧片（stills）。
-- **多种产出**：精彩片段、抓眼球 Hook/标题、LinkedIn 长帖、金句卡、**carousel 轮播长图**、多语言摘要、博客。
-- **多语言**：字幕翻译 + **语音克隆配音**（用演讲者本人声音，MiniMax voice_clone + T2A）。
-- **品牌模板**：多套 CRUD + 默认种子；logo/CTA/字幕样式/片头尾/配乐/版式与**文字拖拽定位**烘焙进成片；品牌页用真 `<Player>` 预览（所见即所得）。
-- **AI 理解**：M3 视觉读图（幻灯片/图表 → 要点）；ASR 词级字幕；主页提示词作为**意图**驱动各产出。
-- **Speaker = persisted memory**：用户可选/自动创建的画像记录，从任务输入中提取口吻、风格、偏好，跨任务复用；按用户隔离，支持多 Speaker（见 ADR-021）。
+- **Vertical Videos**: Speaker footage → cropped segments with burned-in subtitles; **works even without footage** — pure audio / images / slides can be turned into audiograms or still-frame videos.
+- **Multiple Outputs**: Highlight clips, eye-catching hooks / headlines, LinkedIn long-form posts, quote cards, **carousel long images**, multilingual summaries, blog posts.
+- **Multilingual**: Subtitle translation + **voice-cloned dubbing** (using the speaker's own voice via MiniMax voice_clone + T2A).
+- **Brand Templates**: Multiple CRUD templates + default seeds; logo / CTA / subtitle style / intro-outro / music / layout and **text drag-and-drop positioning** baked into the final video; brand page uses a real `<Player>` for WYSIWYG preview.
+- **AI Understanding**: M3 vision reads images (slides / charts → key points); ASR word-level subtitles; homepage prompt acts as **intent** driving all outputs.
+- **Speaker = Persisted Memory**: User-selectable / auto-created profile records, extracting tone, style, and preferences from task inputs for cross-task reuse; user-isolated, supports multiple Speakers (see ADR-021).
 
-## 技术栈
+## Core Usage Flow
 
-- **后端**：FastAPI + Python（含队列 worker）
-- **核心模型**：MiniMax M3（多模态:文本 + 视觉读图 + 语音克隆/T2A）
-- **前端**：TanStack Start + TypeScript
-- **视频渲染**：Remotion（`apps/render`，Node 服务，clip-spec → MP4+SRT）
-- **语音识别**：faster-whisper（自托管，词级时间戳）
-- **任务队列**：Postgres（`FOR UPDATE SKIP LOCKED`）+ 独立 worker，不上 Redis
-- **包管理**：后端 `uv`；前端/渲染/共享组件用 `pnpm` workspace（`web`/`render`/`clip`）
-- **数据库**：PostgreSQL
-- **文件存储**：本地文件系统（对象存储留到规模化）
-- **本地协调**：`scripts/dev.sh`
-- **部署**：Docker Compose
+The main entry point is the homepage input box, not the project list:
 
-## 目录结构
+1. The user drops files (video / audio / transcript / slides / images) or pastes text on the homepage, and enters the desired output intent.
+2. One-click creation of Project, upload of Asset, and trigger of Generation from the homepage.
+3. Worker processes asynchronously: ASR transcription / text extraction / vision reading.
+4. Generation runs: Analyzer splits content → Script / LinkedIn / Quote Card / Carousel / Summary / Blog and other agents generate results.
+5. The user enters the project detail page to review generated clips and derivative content.
+6. The user triggers rendering, and the Worker calls Remotion to generate MP4.
+7. The user exports copy, images, or videos.
+
+Speaker and Brand template are selected from the toolbar below the homepage input box; neither is mandatory.
+
+- **Backend**: FastAPI + Python (includes queue worker)
+- **Core Model**: MiniMax M3 (multimodal: text + vision reading + voice clone / T2A)
+- **Frontend**: TanStack Start + TypeScript
+- **Video Rendering**: Remotion (`apps/render`, Node service, clip-spec → MP4+SRT)
+- **Speech Recognition**: faster-whisper (self-hosted, word-level timestamps)
+- **Task Queue**: Postgres (`FOR UPDATE SKIP LOCKED`) + standalone worker, no Redis
+- **Package Management**: Backend uses `uv`; frontend / render / shared components use `pnpm` workspace (`web` / `render` / `clip`)
+- **Database**: PostgreSQL
+- **File Storage**: Local filesystem (object storage deferred until scale)
+- **Local Orchestration**: `scripts/dev.sh`
+- **Deployment**: Docker Compose
+
+## Directory Structure
 
 ```
 repurposer/
 ├── apps/
-│   ├── api/                 # FastAPI 后端（队列 worker / ASR）
-│   │   └── migrations/      # Alembic 数据库迁移
-│   ├── web/                 # TanStack Start 前端（含竖屏编辑器）
-│   └── render/              # Remotion 渲染服务（clip-spec → MP4+SRT, Node）
+│   ├── api/                 # FastAPI backend (queue worker / ASR)
+│   │   └── migrations/      # Alembic database migrations
+│   ├── web/                 # TanStack Start frontend (includes vertical video editor)
+│   └── render/              # Remotion rendering service (clip-spec → MP4+SRT, Node)
 ├── packages/
-│   └── clip/                # 共享 Remotion <Clip> 组件（web 预览 + render 出片，保 parity）
-├── docs/                    # 项目文档
-│   ├── PRD.md              # 产品需求文档
-│   ├── ARCHITECTURE.md     # 架构设计
-│   ├── VIDEO_EDITOR.md     # 竖屏短片编辑器设计
-│   ├── DECISIONS.md        # 架构决策记录
-│   ├── DATABASE_MIGRATIONS.md  # 数据库迁移指南
-│   └── tasks/              # 可交付的任务卡（如 voice-sample-input.md）
+│   └── clip/                # Shared Remotion <Clip> component (web preview + render output, parity guaranteed)
+├── docs/                    # Project documentation
+│   ├── PRD.md              # Product Requirements Document
+│   ├── ARCHITECTURE.md     # Architecture Design
+│   ├── VIDEO_EDITOR.md     # Vertical Video Editor Design
+│   ├── DECISIONS.md        # Architecture Decision Records
+│   ├── DATABASE_MIGRATIONS.md  # Database Migration Guide
+│   └── tasks/              # Deliverable task cards (e.g. voice-sample-input.md)
 ├── scripts/
-│   └── dev.sh              # 本地一键启动
-├── pnpm-workspace.yaml     # web/render/clip 工作区（api 独立用 uv，不在工作区内）
+│   └── dev.sh              # One-command local startup
+├── pnpm-workspace.yaml     # web/render/clip workspace (api uses uv independently, not in workspace)
 ├── docker-compose.yml
 └── README.md
 ```
 
-## 快速开始
+## Quick Start
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
-本项目后端用 [`uv`](https://github.com/astral-sh/uv) 管理 Python 依赖，前端用 [`pnpm`](https://pnpm.io/) 管理 Node 依赖。
+This project uses [`uv`](https://github.com/astral-sh/uv) for Python dependency management and [`pnpm`](https://pnpm.io/) for Node dependency management.
 
-**为什么用这俩：**
-- **uv**：Rust 写的 Python 包管理器，比 `pip`/`venv` 快 10–100 倍，自动管理虚拟环境和 Python 版本，`uv sync` 按 lockfile 精确复现依赖。
-- **pnpm**：用硬链接共享全局缓存，安装更快、占用磁盘更小，依赖隔离更严格，避免 npm 的「幽灵依赖」问题。
+**Why these two:**
+- **uv**: A Rust-based Python package manager, 10–100× faster than `pip`/`venv`, automatically manages virtual environments and Python versions; `uv sync` reproduces dependencies exactly from the lockfile.
+- **pnpm**: Uses hard links to share a global cache, installs faster, uses less disk space, and provides stricter dependency isolation, avoiding npm's "phantom dependency" problem.
 
-**如果还没装：**
+**If not yet installed:**
 
 ```bash
-# 安装 uv（macOS / Linux）
+# Install uv (macOS / Linux)
 curl -LsSf https://astral.sh/uv/install.sh | sh
-# macOS 也可用 Homebrew： brew install uv
-# Windows（PowerShell）： powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+# macOS via Homebrew: brew install uv
+# Windows (PowerShell): powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# 安装 pnpm（需要 Node.js 18+）
+# Install pnpm (requires Node.js 18+)
 npm install -g pnpm
-# 或独立安装脚本： curl -fsSL https://get.pnpm.io/install.sh | sh -
-# macOS 也可用 Homebrew： brew install pnpm
+# Or standalone install script: curl -fsSL https://get.pnpm.io/install.sh | sh -
+# macOS via Homebrew: brew install pnpm
 ```
 
-> 装完后重开终端（或 `source` 一下 shell 配置）让 `uv` / `pnpm` 进入 PATH，可用 `uv --version`、`pnpm --version` 验证。
+> After installation, restart your terminal (or `source` your shell config) so `uv` / `pnpm` are available in PATH. Verify with `uv --version` and `pnpm --version`.
 
-**安装项目依赖：**
+**Install project dependencies:**
 
 ```bash
-# 后端
+# Backend
 cd apps/api
 uv sync
 
-# 前端 + 渲染服务 + 共享组件（pnpm workspace，在仓库根目录执行一次即可）
+# Frontend + render service + shared components (pnpm workspace; run once from repo root)
 pnpm install
 ```
 
-> `pnpm install` 在根目录执行会一次装好 `apps/web`、`apps/render`、`packages/clip` 三个 workspace 包。
-> 首次启动渲染服务时 Remotion 会下载一个无头 Chromium（约几百 MB），属正常。
+> `pnpm install` run from the root installs all three workspace packages (`apps/web`, `apps/render`, `packages/clip`) in one go.
+> On first startup, the render service will download a headless Chromium (a few hundred MB); this is normal.
 
-### 2. 配置环境变量
+### 2. Configure Environment Variables
 
 ```bash
 cp .env.example .env
-# 编辑 .env，填入 MINIMAX_API_KEY 等
+# Edit .env and fill in MINIMAX_API_KEY, etc.
 ```
 
-### 3. 用 Docker 启动数据库
+### 3. Start the Database with Docker
 
-项目使用 PostgreSQL，推荐用 Docker 跑数据库，省去本地安装。
+The project uses PostgreSQL; running it via Docker is recommended to avoid local installation.
 
 ```bash
-# 只启动数据库容器（postgres:18-alpine，端口 5432，库名 repurposer）
+# Start only the database container (postgres:18-alpine, port 5432, database name repurposer)
 docker compose up -d db
 
-# 常用操作
-docker compose ps          # 查看状态
-docker compose logs -f db  # 看日志
-docker compose stop db     # 停止
+# Common commands
+docker compose ps          # Check status
+docker compose logs -f db  # View logs
+docker compose stop db     # Stop
 ```
 
-- 默认连接串（已写入 `.env.example`）：
+- Default connection string (already in `.env.example`):
   `postgresql+asyncpg://postgres:postgres@localhost:5432/repurposer`
-- 数据持久化在 Docker 卷 `postgres_data`，`docker compose stop` 不会丢数据。
-- 提示：`./scripts/dev.sh` 会在 5432 端口空闲时自动用 Docker 拉起一个 `repurposer-db` 容器；
-  如果你已经用上面的 `docker compose up -d db` 起好了，脚本会自动跳过，不会重复启动。
+- Data is persisted in the Docker volume `postgres_data`; `docker compose stop` does not delete data.
+- Note: `./scripts/dev.sh` will automatically launch a `repurposer-db` container via Docker when port 5432 is free;
+  if you already started it with `docker compose up -d db` above, the script will skip it automatically and not start a duplicate.
 
-> Docker 不可用时，脚本会打印警告并跳过，此时请自行保证 5432 端口有可连接的 PostgreSQL。
+> If Docker is unavailable, the script will print a warning and skip; in that case, please ensure port 5432 has a connectable PostgreSQL instance.
 
-### 4. 运行数据库迁移
+### 4. Run Database Migrations
 
-后端使用 [Alembic](https://alembic.sqlalchemy.org/) 管理数据库 schema 变更。首次启动前或拉取新代码后，需要应用迁移到最新版本：
+The backend uses [Alembic](https://alembic.sqlalchemy.org/) to manage database schema changes. Before first startup or after pulling new code, apply migrations to the latest version:
 
 ```bash
 cd apps/api
 uv run alembic upgrade head
 ```
 
-常用命令：
+Common commands:
 
 ```bash
-# 查看当前迁移版本
+# Check current migration version
 uv run alembic current
 
-# 生成新的自动迁移（修改 models 后执行）
+# Generate a new auto-migration (run after modifying models)
 uv run alembic revision --autogenerate -m "describe your change"
 
-# 回滚一级
+# Rollback one level
 uv run alembic downgrade -1
 ```
 
-> **注意**：`./scripts/dev.sh` 会在启动 API 前自动运行 `uv run alembic upgrade head`，所以日常本地开发不手动跑迁移也可以。但首次部署或 CI 中建议显式执行。
+> **Note**: `./scripts/dev.sh` automatically runs `uv run alembic upgrade head` before starting the API, so manual migrations are not required for daily local development. However, explicit execution is recommended for first-time deployment or in CI.
 
-### 5. 一键启动应用，然后访问 3000
+### 5. One-Command Startup, then visit :3000
 
 ```bash
 ./scripts/dev.sh
 ```
 
-脚本会同时拉起 **后端（:8000）**、**队列 worker**、**渲染服务（:3001）** 和 **前端（:3000）**，并在需要时自动启动数据库。
-启动完成后，浏览器打开 👉 **http://localhost:3000**
+The script will simultaneously start the **backend (:8000)**, **queue worker**, **render service (:3001)**, and **frontend (:3000)**, and automatically start the database when needed.
+Once started, open 👉 **http://localhost:3000** in your browser.
 
-| 服务 | 地址 |
-|------|------|
-| 前端（Web App） | http://localhost:3000 |
-| 后端（API） | http://localhost:8000 |
-| API 文档（Swagger） | http://localhost:8000/docs |
-| 渲染服务（Remotion） | http://localhost:3001 |
+| Service | URL |
+|---------|-----|
+| Frontend (Web App) | http://localhost:3000 |
+| Backend (API) | http://localhost:8000 |
+| API Docs (Swagger) | http://localhost:8000/docs |
+| Render Service (Remotion) | http://localhost:3001 |
 
-> 渲染服务（`apps/render`）是 api worker 调用的黑盒（clip-spec → MP4+SRT）；纯文本产出流程不需要它。
+> The render service (`apps/render`) is a black box called by the API worker (clip-spec → MP4+SRT); pure text output flows do not need it.
 
-### 5.（可选）全栈 Docker 一键运行
+### 5. (Optional) Full-Stack Docker One-Command Run
 
-无需本地装 Node / Python，直接用 Docker 跑全栈 **db + api + worker + render + web**：
+No need to install Node / Python locally; run the full stack **db + api + worker + render + web** directly with Docker:
 
 ```bash
 MINIMAX_API_KEY=sk-xxx docker compose up --build
-# 完成后访问 http://localhost:3000
+# Then visit http://localhost:3000
 ```
 
-服务编排说明：
+Service orchestration details:
 
-| 服务 | 镜像/构建 | 说明 |
-|---|---|---|
-| `db` | postgres:18-alpine | 数据库，数据持久化在卷 `postgres_data` |
-| `api` | `apps/api/Dockerfile`（uv） | FastAPI，:8000 |
-| `worker` | 同 api 镜像，`command: python -m app.worker` | 队列消费者；调用 render 服务 |
-| `render` | `apps/render/Dockerfile`（构建上下文=仓库根） | Remotion 渲染服务，:3001，内置 Chromium |
-| `web` | `apps/web/Dockerfile`（构建上下文=仓库根） | TanStack Start SSR，:3000 |
+| Service | Image / Build | Description |
+|---------|---------------|-------------|
+| `db` | postgres:18-alpine | Database; data persisted in volume `postgres_data` |
+| `api` | `apps/api/Dockerfile` (uv) | FastAPI, :8000 |
+| `worker` | Same api image, `command: python -m app.worker` | Queue consumer; calls render service |
+| `render` | `apps/render/Dockerfile` (build context = repo root) | Remotion render service, :3001, includes Chromium |
+| `web` | `apps/web/Dockerfile` (build context = repo root) | TanStack Start SSR, :3000 |
 
-注意：
-- `render` / `web` 都依赖 workspace 包 `@repurposer/clip`，构建上下文是**仓库根**（不是各自子目录）。
-- 容器内主机名互联：`API_PUBLIC_URL=http://api:8000`、`RENDER_URL=http://render:3001/render`（render 通过 HTTP 回拉源视频，渲染结果写共享卷 `./data/outputs`）。
-- `render` 镜像内置无头 Chromium 的系统库；Chromium 二进制（约 90MB）在**首次渲染时**惰性下载（构建期不依赖外网，更适合 CI/受限网络）。
-- `web` 当前用 `vite preview` 起 SSR，适合 MVP/staging；高流量部署可换成围绕导出的 fetch handler 的轻量 node 适配层（见 ADR-018）。
+Notes:
+- Both `render` and `web` depend on the workspace package `@repurposer/clip`; the build context is the **repo root** (not their individual subdirectories).
+- Inter-container hostnames: `API_PUBLIC_URL=http://api:8000`, `RENDER_URL=http://render:3001/render` (render pulls source video via HTTP, writes rendered output to shared volume `./data/outputs`).
+- The `render` image includes system libraries for headless Chromium; the Chromium binary (~90MB) is downloaded **lazily on first render** (no external network dependency at build time, better for CI / restricted networks).
+- `web` currently uses `vite preview` for SSR, suitable for MVP / staging; for high-traffic deployments, switch to a lightweight Node adapter around the exported fetch handler (see ADR-018).
 
-## 文档
+## Documentation
 
-- [产品需求文档](./docs/PRD.md)
-- [架构设计](./docs/ARCHITECTURE.md)
-- [API 规范](./docs/API.md)
-- [架构决策记录](./docs/DECISIONS.md)
-- [开发排期与路线图](./docs/SCHEDULE.md)
+- [Product Requirements Document](./docs/PRD.md)
+- [Architecture Design](./docs/ARCHITECTURE.md)
+- [API Specification](./docs/API.md)
+- [Architecture Decision Records](./docs/DECISIONS.md)
+- [Development Schedule & Roadmap](./docs/SCHEDULE.md)
 
-## 开发规范
+## Development Conventions
 
-- 后端代码放在 `apps/api/`
-- 前端代码放在 `apps/web/`（TanStack Start）
-- 视频渲染服务放在 `apps/render/`（Remotion，Node）；共享的 `<Clip>` 组件放在 `packages/clip/`
-- 文档放在 `docs/`
-- 用轻量 **pnpm workspace** 串起 `web`/`render`/`clip`（共享 Remotion 组件以保证「预览=成片」）；**不引入 Turborepo/Nx 等重型 monorepo 工具**。`apps/api` 独立用 `uv`，不在 workspace 内
-- 前后端通过 REST API 通信，类型由后端 OpenAPI 生成
+- Backend code lives in `apps/api/`
+- Frontend code lives in `apps/web/` (TanStack Start)
+- Video render service lives in `apps/render/` (Remotion, Node); shared `<Clip>` component lives in `packages/clip/`
+- Documentation lives in `docs/`
+- Use a lightweight **pnpm workspace** to wire together `web` / `render` / `clip` (shared Remotion components guarantee "preview = rendered output"); **do not introduce heavy monorepo tools like Turborepo / Nx**. `apps/api` uses `uv` independently and is not in the workspace
+- Frontend and backend communicate via REST API; types are generated from the backend OpenAPI spec
