@@ -1,25 +1,59 @@
-# API 规范
+# API Specification
 
-> 状态：Draft，随开发迭代更新。
+> Status: Draft, updated iteratively as development progresses.
 
-## 1. 基础信息
+## 1. Basics
 
-- **Base URL**：`http://localhost:8000`
-- **API Prefix**：`/api/v1`
-- **Content-Type**：`application/json`
-- **认证**：本期暂不实现，后续通过 JWT 或 session
+- **Base URL**: `http://localhost:8000`
+- **API Prefix**: `/api/v1`
+- **Content-Type**: `application/json`
+- **Authentication**: Not implemented in this phase; JWT or session-based auth will be added later.
 
-## 2. 文件流式
+## 2. Main Flow Call Sequence
 
-上传源视频、渲染成片、内置配乐均通过支持 HTTP Range 的端点，供浏览器播放 / seek / 渲染服务拉取：
+The homepage input box is the main entry point. After the user clicks Generate, the frontend calls the following endpoints in sequence:
+
+```
+POST /api/v1/projects
+  → Create Project
+  → Returns { id, title, ... }
+
+POST /api/v1/projects/{project_id}/assets
+  → Upload raw material (file or prompt text)
+  → Returns { id, type, processing_status: "pending", ... }
+
+POST /api/v1/projects/{project_id}/generate
+  → Trigger async generation
+  → Returns { job_id, status: "pending" }
+```
+
+After that, the frontend navigates to the project detail page and polls the following endpoints to check results:
+
+```
+GET /api/v1/projects/{project_id}
+GET /api/v1/projects/{project_id}/assets
+GET /api/v1/projects/{project_id}/clips
+GET /api/v1/projects/{project_id}/derivatives
+GET /api/v1/projects/{project_id}/jobs/{job_id}
+```
+
+When rendering a video, call:
+
+```
+POST /api/v1/clips/{clip_id}/render
+```
+
+## 3. File Streaming
+
+Source video uploads, rendered outputs, and built-in music tracks are all served through HTTP Range-enabled endpoints for browser playback, seeking, and renderer fetching:
 
 ```http
 GET /api/v1/files/{file_path}
 GET /api/v1/outputs/{file_path}
-GET /api/v1/music/{mood}        # 内置 mood 曲库，如 calm / uplifting / corporate
+GET /api/v1/music/{mood}        # Built-in mood library, e.g. calm / uplifting / corporate
 ```
 
-## 3. 错误格式
+## 4. Error Format
 
 ```json
 {
@@ -31,11 +65,11 @@ GET /api/v1/music/{mood}        # 内置 mood 曲库，如 calm / uplifting / co
 }
 ```
 
-## 3. Speaker 管理
+## 5. Speaker Management
 
-> **演进说明**：Speaker API 正在按 ADR-021 重构。目标方向是：Speaker 按用户隔离、创建项目时 `speaker_id` 可选、未选择时系统自动创建。当前以下端点仍保留手动创建和过往材料生成 persona 的形态，后续会逐步收敛到 auto/manual 统一的 memory 模型。
+> **Evolution Note**: The Speaker API is being refactored per ADR-021. The target direction is: Speakers are isolated per user; `speaker_id` is optional at project creation; if not selected, the system auto-creates one. The endpoints below still retain the manual-creation and past-material-to-persona shapes, and will gradually converge toward a unified auto/manual memory model.
 
-### 创建 Speaker
+### Create Speaker
 
 ```http
 POST /api/v1/speakers
@@ -65,25 +99,25 @@ Response:
 }
 ```
 
-### 获取 Speaker 列表
+### List Speakers
 
 ```http
 GET /api/v1/speakers
 ```
 
-### 获取 Speaker 详情
+### Get Speaker Detail
 
 ```http
 GET /api/v1/speakers/{speaker_id}
 ```
 
-### 更新 Speaker
+### Update Speaker
 
 ```http
 PUT /api/v1/speakers/{speaker_id}
 ```
 
-### 上传 Speaker 过往材料
+### Upload Speaker Past Material
 
 ```http
 POST /api/v1/speakers/{speaker_id}/materials
@@ -92,10 +126,10 @@ Content-Type: multipart/form-data
 
 Fields:
 
-- `file`: 文件
+- `file`: File
 - `type`: `book` | `article` | `speech` | `social_media`
 
-### 生成/更新 Speaker 风格画像
+### Generate / Update Speaker Style Persona
 
 ```http
 POST /api/v1/speakers/{speaker_id}/persona/generate
@@ -114,11 +148,11 @@ Response:
 }
 ```
 
-## 4. 项目管理
+## 4. Project Management
 
-> **演进说明**：创建项目时的 `speaker_id` 计划改为可选。未选择时，系统会在任务处理完成后自动创建一条 Speaker memory 并关联项目。当前实现可能仍为必填，正在重构中。
+> **Evolution Note**: The `speaker_id` field in project creation is planned to become optional. When omitted, the system will automatically create a Speaker memory and associate it with the project after task processing completes. The current implementation may still require it; refactoring is in progress.
 
-### 创建项目
+### Create Project
 
 ```http
 POST /api/v1/projects
@@ -135,21 +169,21 @@ Request:
 }
 ```
 
-### 获取项目列表
+### List Projects
 
 ```http
 GET /api/v1/projects?speaker_id=uuid
 ```
 
-### 获取项目详情
+### Get Project Detail
 
 ```http
 GET /api/v1/projects/{project_id}
 ```
 
-## 5. 素材上传
+## 5. Asset Upload
 
-### 上传素材
+### Upload Asset
 
 ```http
 POST /api/v1/projects/{project_id}/assets
@@ -158,26 +192,26 @@ Content-Type: multipart/form-data
 
 Fields:
 
-- `file`: 文件
+- `file`: File
 - `type`: `video` | `audio` | `transcript` | `slides` | `image` | `voice_sample` | `past_material`
 
-> `voice_sample` 也可挂在 speaker 上(`POST /api/v1/speakers/{id}/assets`，带 `type`)——见「Speaker = 用户画像」。`image`/`slides` 会被处理:图片走 M3 视觉提取要点、幻灯片 PDF 逐页渲染成图。
+> `voice_sample` can also be attached to a speaker (`POST /api/v1/speakers/{id}/assets`, with `type`) — see "Speaker = User Profile". `image`/`slides` will be processed: images go through M3 vision for key-point extraction; slide PDFs are rendered page-by-page into images.
 
-### 获取素材列表
+### List Assets
 
 ```http
 GET /api/v1/projects/{project_id}/assets
 ```
 
-### 删除素材
+### Delete Asset
 
 ```http
 DELETE /api/v1/projects/{project_id}/assets/{asset_id}
 ```
 
-## 6. 生成任务
+## 6. Generation Tasks
 
-### 触发生成
+### Trigger Generation
 
 ```http
 POST /api/v1/projects/{project_id}/generate
@@ -190,8 +224,8 @@ Request:
   "clip_count": 3,
   "outputs": ["clips", "linkedin", "quote_cards", "carousel", "summary", "blog"],
   "target_language": "en",
-  "brand_template_id": "uuid | null",        // 选用哪套品牌模板；缺省取最新
-  "instruction": "聚焦实体机器人角度，hook 要狠",  // 用户意图，驱动 analyzer/script 及各衍生 agent
+  "brand_template_id": "uuid | null",        // Which brand template to use; defaults to latest if omitted
+  "instruction": "聚焦实体机器人角度，hook 要狠",  // User intent, drives the analyzer/script and derivative agents
   "tone_settings": {
     "academic_vs_casual": 0.7,
     "rational_vs_passionate": 0.4,
@@ -201,7 +235,7 @@ Request:
 }
 ```
 
-> `outputs` 可选项：`clips | linkedin | quote_cards | carousel | summary | blog`。`clips` 始终生成。
+> `outputs` options: `clips | linkedin | quote_cards | carousel | summary | blog`. `clips` is always generated.
 
 Response:
 
@@ -213,28 +247,28 @@ Response:
 }
 ```
 
-### 查询生成任务
+### Query Generation Jobs
 
 ```http
 GET /api/v1/projects/{project_id}/jobs
 GET /api/v1/projects/{project_id}/jobs/{job_id}
 ```
 
-## 7. Clip 管理
+## 7. Clip Management
 
-### 获取 Clip 列表
+### List Clips
 
 ```http
 GET /api/v1/projects/{project_id}/clips
 ```
 
-### 获取 Clip 详情
+### Get Clip Detail
 
 ```http
 GET /api/v1/clips/{clip_id}
 ```
 
-### 编辑 Clip
+### Edit Clip
 
 ```http
 PUT /api/v1/clips/{clip_id}
@@ -263,41 +297,41 @@ Request:
 }
 ```
 
-> `source.kind`: `video`(真人录像) | `stills`(图片音频图,`image_urls` 垫底 + `url` 可选语音)。位置点 `caption_position`/`title.position`/`brand.cta_position` 为归一化 `{x,y}`,null→默认。
+> `source.kind`: `video` (real-person recording) | `stills` (image-audio montage, `image_urls` as base layer + optional `url` for voice). Position points `caption_position`/`title.position`/`brand.cta_position` are normalized `{x,y}`; null means default.
 
-### 触发渲染
+### Trigger Render
 
 ```http
 POST /api/v1/clips/{clip_id}/render
 ```
 
-队列化渲染:返回 202,worker 认领 `render_status=PENDING` → 调 Remotion → 写回 `video_url`/`srt_url`。
+Queued render: returns 202, worker claims `render_status=PENDING` → calls Remotion → writes back `video_url`/`srt_url`.
 
-### 字幕换语言
+### Translate Captions
 
 ```http
 POST /api/v1/clips/{clip_id}/translate-captions
 ```
 
-Request: `{ "target_language": "fr" }`。Response：更新后的 `Clip`（`caption_track` 与 `target_language` 已重写）。
+Request: `{ "target_language": "fr" }`. Response: updated `Clip` (`caption_track` and `target_language` rewritten).
 
-### 语音克隆配音(dub)
+### Voice Clone Dubbing (dub)
 
 ```http
 POST /api/v1/clips/{clip_id}/dub
 ```
 
-Request: `{ "target_language": "fr" }`。用演讲者声音(画像 VOICE_SAMPLE / 本场 AUDIO / VIDEO 抽轨)经 MiniMax voice_clone + T2A 把(翻译后的)字幕配成目标语言。Response：更新后的 `Clip`,`render_spec.dub` 已写入(渲染时静音原声、播配音)。
+Request: `{ "target_language": "fr" }`. Uses the speaker's voice (from persona VOICE_SAMPLE / this session's AUDIO / VIDEO extracted track) via MiniMax voice_clone + T2A to dub the (translated) captions into the target language. Response: updated `Clip`, `render_spec.dub` written (original audio is muted during render, dubbed audio plays).
 
-### 基于反馈修订
+### Revise Based on Feedback
 
 ```http
 POST /api/v1/clips/{clip_id}/revise
 ```
 
-Request: 同 `FeedbackRequest`。Response：修订后的 `Clip`。
+Request: same as `FeedbackRequest`. Response: revised `Clip`.
 
-### 提交反馈
+### Submit Feedback
 
 ```http
 POST /api/v1/clips/{clip_id}/feedback
@@ -313,23 +347,23 @@ Request:
 }
 ```
 
-## 8. 衍生内容
+## 8. Derivative Content
 
-### 获取衍生内容列表
+### List Derivatives
 
 ```http
 GET /api/v1/projects/{project_id}/derivatives
 ```
 
-### 编辑衍生内容
+### Edit Derivative
 
 ```http
 PUT /api/v1/derivatives/{derivative_id}
 ```
 
-## 9. 导出
+## 9. Export
 
-### 导出项目全部内容
+### Export All Project Content
 
 ```http
 POST /api/v1/projects/{project_id}/export
@@ -352,11 +386,11 @@ Response:
 }
 ```
 
-## 10. 品牌模板（Brand Template）
+## 10. Brand Template
 
-品牌模板决定视频成片中的品牌叠加元素。**多套 CRUD**;启动时种一份默认。生成时由 `GenerateRequest.brand_template_id` 选用(缺省取最新),把 `aspect` / 字幕·标题·CTA 样式与**位置点** / 片头尾 / 配乐 mood 烘焙进 `render_spec`。
+Brand templates determine the brand overlay elements in the final video. **Full CRUD**; a default is seeded on startup. At generation time, `GenerateRequest.brand_template_id` selects one (defaults to latest), baking `aspect` / caption·title·CTA styles and **position points** / intro/outro / music mood into `render_spec`.
 
-### 创建/更新品牌模板
+### Create / Update Brand Template
 
 ```http
 POST /api/v1/brand-templates
@@ -390,31 +424,31 @@ Request:
 }
 ```
 
-### 获取品牌模板列表
+### List Brand Templates
 
 ```http
 GET /api/v1/brand-templates
 ```
 
-### 获取单个品牌模板
+### Get Single Brand Template
 
 ```http
 GET /api/v1/brand-templates/{template_id}
 ```
 
-### 删除品牌模板
+### Delete Brand Template
 
 ```http
 DELETE /api/v1/brand-templates/{template_id}
 ```
 
-## 11. 数据模型
+## 11. Data Models
 
-详见 [架构设计](./ARCHITECTURE.md) 中的数据模型部分。
+See the Data Models section in [Architecture Design](./ARCHITECTURE.md).
 
-核心模型：
+Core models:
 
-- `Speaker`（= 用户画像：persona 风格 + 声纹；见 ADR-021）
+- `Speaker` (= user profile: persona style + voiceprint; see ADR-021)
 - `Project`
 - `Asset`
 - `Clip`
@@ -423,5 +457,5 @@ DELETE /api/v1/brand-templates/{template_id}
 - `HumanFeedback`
 - `BrandTemplate`
 
-clip-spec 相关：`ClipSpec` / `ClipSource`(kind/image_urls) / `CaptionCue` / `ClipTitle`(size/position) / `ClipMusic` / `ClipDub` / `ClipBrand`(cta_position) / `Point`。
-请求/衍生:`GenerateRequest`(carousel/brand_template_id/instruction) / `DubRequest` / `TranslateCaptionsRequest` / `CarouselResponse` / `CarouselSlide`。
+Clip-spec related: `ClipSpec` / `ClipSource`(kind/image_urls) / `CaptionCue` / `ClipTitle`(size/position) / `ClipMusic` / `ClipDub` / `ClipBrand`(cta_position) / `Point`.
+Requests/derivatives: `GenerateRequest`(carousel/brand_template_id/instruction) / `DubRequest` / `TranslateCaptionsRequest` / `CarouselResponse` / `CarouselSlide`.

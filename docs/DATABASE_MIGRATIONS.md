@@ -1,119 +1,119 @@
-# 数据库迁移指南
+# Database Migration Guide
 
-Repurposer 后端使用 [SQLAlchemy 2.0](https://www.sqlalchemy.org/) 作为 ORM，[Alembic](https://alembic.sqlalchemy.org/) 作为数据库迁移工具。
+The Repurposer backend uses [SQLAlchemy 2.0](https://www.sqlalchemy.org/) as the ORM and [Alembic](https://alembic.sqlalchemy.org/) as the database migration tool.
 
-## 为什么用 Alembic
+## Why Alembic
 
-SQLAlchemy 的 `Base.metadata.create_all()` 只能在数据库为空时创建表，**无法安全地修改已有表的列、约束或类型**。随着项目演进，给已有表加列、改 nullable、加索引是常态。Alembic 是 SQLAlchemy 官方维护的迁移工具，可以：
+SQLAlchemy's `Base.metadata.create_all()` can only create tables when the database is empty; **it cannot safely modify existing columns, constraints, or types**. As the project evolves, adding columns to existing tables, changing nullable flags, and adding indexes are routine tasks. Alembic is the officially maintained migration tool for SQLAlchemy. It can:
 
-- 记录每次 schema 变更的版本历史
-- 支持升级（upgrade）和回滚（downgrade）
-- 自动生成迁移脚本（autogenerate），减少手写 SQL
-- 在 CI/CD 中显式控制数据库版本
+- Record version history for every schema change
+- Support both upgrades and downgrades
+- Auto-generate migration scripts (`autogenerate`), reducing hand-written SQL
+- Explicitly control database versions in CI/CD
 
-## 环境准备
+## Environment Setup
 
-确保 PostgreSQL 已启动（本地开发通常由 `docker compose up -d db` 或 `./scripts/dev.sh` 自动拉起），并且 `apps/api/.env` 中的 `DATABASE_URL` 配置正确。
+Make sure PostgreSQL is running (local development usually starts it automatically via `docker compose up -d db` or `./scripts/dev.sh`), and that `DATABASE_URL` in `apps/api/.env` is configured correctly.
 
-## 常用命令
+## Common Commands
 
-所有命令都在 `apps/api` 目录下执行：
+All commands are run inside the `apps/api` directory:
 
 ```bash
 cd apps/api
 ```
 
-### 应用迁移到最新版本
+### Apply migrations to the latest version
 
 ```bash
 uv run alembic upgrade head
 ```
 
-### 查看当前数据库版本
+### Check the current database version
 
 ```bash
 uv run alembic current
 ```
 
-### 生成新的自动迁移
+### Generate a new auto-migration
 
-修改了 `app/models/tables.py` 或 `app/models/schemas.py` 后：
+After modifying `app/models/tables.py` or `app/models/schemas.py`:
 
 ```bash
 uv run alembic revision --autogenerate -m "describe your change"
 ```
 
-生成的脚本会放在 `migrations/versions/` 目录。生成后**务必人工检查**，autogenerate 对复杂约束、enum 改名、默认值等场景不一定完全准确。
+The generated script will be placed in the `migrations/versions/` directory. **Always review it manually** after generation — autogenerate may not be fully accurate for complex constraints, enum renames, default values, and similar scenarios.
 
-### 回滚迁移
+### Roll back a migration
 
 ```bash
-# 回滚一级
+# Roll back one step
 uv run alembic downgrade -1
 
-# 回滚到初始状态
+# Roll back to the initial state
 uv run alembic downgrade base
 ```
 
-### 查看迁移历史
+### View migration history
 
 ```bash
 uv run alembic history
 ```
 
-## 自动迁移（应用启动）
+## Automatic Migrations (on Application Startup)
 
-`app/models/database.py` 的 `init_db()` 会在 FastAPI lifespan 中调用：
+`init_db()` in `app/models/database.py` is called during the FastAPI lifespan:
 
 ```python
 command.upgrade(alembic_cfg, "head")
 ```
 
-此外，`./scripts/dev.sh` 在启动 API 之前也会显式执行：
+In addition, `./scripts/dev.sh` explicitly runs the following before starting the API:
 
 ```bash
 uv run alembic upgrade head
 ```
 
-这意味着日常本地开发 `./scripts/dev.sh` 启动时，数据库会自动同步到最新版本。
+This means that during daily local development, the database is automatically synchronized to the latest version when `./scripts/dev.sh` starts.
 
-但以下场景建议显式执行迁移：
+However, explicit migration is recommended in the following scenarios:
 
-- 首次在新机器/新数据库上运行
-- CI/CD 部署流程
-- 生产环境（避免依赖应用启动时的隐式迁移）
+- First run on a new machine or new database
+- CI/CD deployment pipelines
+- Production environments (avoid relying on implicit migrations during application startup)
 
-## 重要约定
+## Important Conventions
 
-1. **不要手动改数据库**：所有 schema 变更都通过 Alembic 迁移脚本完成。
-2. **提交迁移脚本**：`migrations/versions/*.py` 是代码的一部分，需要提交到 git。
-3. **人工审查 autogenerate 结果**：生成迁移后打开脚本检查，确保它确实表达了你的意图。
-4. **模型导入**：`migrations/env.py` 已导入 `app.models.tables`，确保 autogenerate 能检测到所有模型。
-5. **同步 vs 异步驱动**：主应用使用 `postgresql+asyncpg`，Alembic 使用 `postgresql+psycopg2`，`env.py` 会自动转换 URL。
+1. **Do not modify the database manually**: All schema changes must go through Alembic migration scripts.
+2. **Commit migration scripts**: `migrations/versions/*.py` is part of the codebase and must be committed to git.
+3. **Manually review autogenerate output**: Open the generated script and verify that it accurately expresses your intent.
+4. **Model imports**: `migrations/env.py` already imports `app.models.tables`, ensuring autogenerate can detect all models.
+5. **Sync vs async drivers**: The main application uses `postgresql+asyncpg`, while Alembic uses `postgresql+psycopg2`. `env.py` automatically converts the URL.
 
-## 常见问题
+## Common Issues
 
-### 启动时报 "Can't locate revision identified by xxxx"
+### "Can't locate revision identified by xxxx" on startup
 
-通常是因为本地 `alembic_version` 表里记录的版本和 `migrations/versions/` 目录不一致。解决办法：
+This usually happens because the version recorded in the local `alembic_version` table does not match the `migrations/versions/` directory. Solutions:
 
 ```bash
-# 如果数据库是空的或可以重建
+# If the database is empty or can be rebuilt
 uv run alembic downgrade base
 uv run alembic upgrade head
 
-# 如果只是版本记录错乱，可以手动修正
+# If only the version record is out of sync, you can fix it manually
 uv run alembic stamp head
 ```
 
-### autogenerate 没有检测到变化
+### autogenerate does not detect changes
 
-检查 `migrations/env.py` 是否正确导入了包含模型定义的模块。本项目已导入 `app.models.tables`。
+Check whether `migrations/env.py` correctly imports the module containing the model definitions. This project already imports `app.models.tables`.
 
-### 想从零开始重建本地数据库
+### Rebuilding the local database from scratch
 
 ```bash
-# 谨慎：这会删除所有数据
+# Caution: this will delete all data
 uv run python -c "
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -131,4 +131,4 @@ asyncio.run(reset())
 uv run alembic upgrade head
 ```
 
-生产环境**绝对不要**这样做。
+**Never do this in production.**

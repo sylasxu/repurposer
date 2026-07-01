@@ -1,12 +1,12 @@
-# 架构决策记录（ADR）
+# Architecture Decision Records (ADR)
 
-## ADR-001：使用单仓库简单目录结构
+## ADR-001: Single-repo, simple directory structure
 
-**状态**：已决策
+**Status**: Decided
 
-**背景**：需要同时管理 Python 后端和 Node.js 前端。
+**Context**: Need to manage both a Python backend and a Node.js frontend.
 
-**决策**：使用单仓库，前后端分目录，不引入 Turborepo/Nx/Pants 等 monorepo 工具。
+**Decision**: Use a single repository with separate frontend and backend directories. Do not introduce monorepo tools like Turborepo/Nx/Pants.
 
 ```
 repurposer/
@@ -16,238 +16,238 @@ repurposer/
 └── scripts/
 ```
 
-**原因**：
-- P0 阶段前后端交互简单，没有大量共享代码
-- 各用各的包管理器（uv / pnpm），互不干扰
-- 用 `Justfile` 或 `scripts/dev.sh` 协调启动即可
-- 避免引入不必要的工具学习成本
+**Rationale**:
+- P0 phase: frontend and backend interactions are simple, with little shared code
+- Each uses its own package manager (uv / pnpm), no interference
+- Coordinate startup with `Justfile` or `scripts/dev.sh`
+- Avoid unnecessary tooling learning overhead
 
-**替代方案**：
-- Turborepo：不适合 Python
-- Nx：不是 Python 原生
-- Pants/Bazel：太重
-- 多仓库：不方便同步改动
-
----
-
-## ADR-002：后端使用 FastAPI
-
-**状态**：已决策
-
-**决策**：后端使用 FastAPI。
-
-**原因**：
-- 自动生成 OpenAPI 文档
-- 原生支持 Pydantic，适合结构化输出
-- 异步性能优秀
-- 团队熟悉
+**Alternatives**:
+- Turborepo: not suitable for Python
+- Nx: not Python-native
+- Pants/Bazel: too heavy
+- Multi-repo: inconvenient for syncing changes
 
 ---
 
-## ADR-003：核心智能层使用 MiniMax M3
+## ADR-002: FastAPI for the backend
 
-**状态**：已决策
+**Status**: Decided
 
-**决策**：核心 LLM 使用 MiniMax M3。
+**Decision**: Use FastAPI for the backend.
 
-**原因**：
-- 1M 上下文，可吞入演讲稿 + 过往材料 + 示例
-- 原生多模态，可处理图片
-- 支持结构化输出
-- 国内访问稳定
-
-**风险**：
-- 如果输出质量不稳定，可能需要 fallback 到其他模型
+**Rationale**:
+- Auto-generates OpenAPI documentation
+- Native Pydantic support, good for structured output
+- Excellent async performance
+- Team familiarity
 
 ---
 
-## ADR-004：手搓 Agent 工作流
+## ADR-003: MiniMax M3 as the core intelligence layer
 
-**状态**：已决策
+**Status**: Decided
 
-**决策**：P0 不引入 Pydantic AI / LangGraph / CrewAI 等 Agent 框架，自研 Agent 编排器。
+**Decision**: Use MiniMax M3 as the core LLM.
 
-**原因**：
-- 单模型（MiniMax M3），不需要 provider 抽象
-- Workflow 明确固定：persona → analyze → script → review → revise → HITL
-- Prompt 需要精细控制，框架模板可能不够灵活
-- 白盒调试更方便
+**Rationale**:
+- 1M context window, can ingest transcripts + past materials + examples
+- Native multimodal, can process images
+- Supports structured output
+- Stable access from mainland China
 
-**未来**：如果 P2 workflow 变得非常复杂，再评估 LangGraph 或 Pydantic AI。
-
----
-
-## ADR-005：Python 包管理使用 uv
-
-**状态**：已决策
-
-**决策**：Python 项目使用 uv 作为包管理器。
-
-**原因**：
-- 速度快
-- 现代 Python 工作流（lock 文件、venv、run 一体化）
-- 适合新项目
+**Risk**:
+- If output quality is unstable, may need to fallback to another model
 
 ---
 
-## ADR-006：前端使用 TanStack Start + TypeScript
+## ADR-004: Hand-rolled agent workflow
 
-**状态**：已决策
+**Status**: Decided
 
-**背景**：P0 是内部验证，但未来目标是 SaaS 产品，需要为产品化打好基础。
+**Decision**: Do not introduce Pydantic AI / LangGraph / CrewAI for P0. Build a custom agent orchestrator.
 
-**决策**：前端使用 TanStack Start + TypeScript。
+**Rationale**:
+- Single model (MiniMax M3), no need for provider abstraction
+- Workflow is clearly fixed: persona → analyze → script → review → revise → HITL
+- Prompts need fine-grained control; framework templates may not be flexible enough
+- White-box debugging is easier
 
-**原因**：
-- 部署平台无关，不绑定 Vercel
-- 端到端类型安全强
-- 显式服务端/客户端边界，减少 hydration 和密钥泄漏问题
-- 为未来 SaaS 产品化做准备
-
-**风险**：
-- 框架较新，生态比 Next.js 小
-- 团队学习成本
-- AI 编码工具对 TanStack Start 支持较弱
-
-**缓解**：
-- P0 功能简单，用不到复杂特性
-- 文档完善，核心概念清晰
+**Future**: If the P2 workflow becomes very complex, re-evaluate LangGraph or Pydantic AI.
 
 ---
 
-## ADR-007：API 类型同步使用 OpenAPI
+## ADR-005: uv for Python package management
 
-**状态**：已决策
+**Status**: Decided
 
-**决策**：前后端不维护共享类型包，前端类型从后端 OpenAPI 生成。
+**Decision**: Use uv as the Python package manager.
 
-**原因**：
-- 减少共享包维护成本
-- 后端是类型权威来源
-- 使用 `openapi-typescript` 自动生成
-
----
-
-## ADR-008：视频渲染先用图片轮播 + 字幕
-
-**状态**：已决策
-
-**决策**：P0 视频渲染不追求复杂剪辑，先用图片轮播 + 字幕 + BGM 的形式。
-
-**原因**：
-- 快速验证内容生成质量
-- 降低渲染复杂度
-- 后续可替换为更复杂的视频引擎
+**Rationale**:
+- Fast
+- Modern Python workflow (lock files, venv, run all-in-one)
+- Good fit for new projects
 
 ---
 
-## ADR-009：声音克隆 P1 再做
+## ADR-006: TanStack Start + TypeScript for the frontend
 
-**状态**：已决策
+**Status**: Decided
 
-**决策**：P0 使用通用 TTS，P1 再接入声音克隆。
+**Context**: P0 is internal validation, but the end goal is a SaaS product, so we need to lay the groundwork for productization.
 
-**原因**：
-- P0 先验证脚本和内容质量
-- 声音克隆涉及授权、效果评估等额外问题
-- 通用 TTS 已能满足 demo 需求
+**Decision**: Use TanStack Start + TypeScript for the frontend.
 
----
+**Rationale**:
+- Platform-agnostic, not tied to Vercel
+- Strong end-to-end type safety
+- Explicit server/client boundaries, reducing hydration and key leakage issues
+- Prepares for future SaaS productization
 
-## ADR-010：数据库使用 PostgreSQL
+**Risks**:
+- Framework is relatively new, smaller ecosystem than Next.js
+- Team learning curve
+- AI coding tools have weaker support for TanStack Start
 
-**状态**：已决策
-
-**决策**：P0 使用 PostgreSQL 作为数据库。
-
-**原因**：
-- 未来目标是 SaaS，PostgreSQL 是生产级选择
-- 比 SQLite 更适合多用户、并发、数据完整性
-- 团队熟悉，生态成熟
-- Docker Compose 本地启动简单
-
-**替代方案**：
-- SQLite：部署更简单，但扩展性差
+**Mitigation**:
+- P0 features are simple, no complex features needed
+- Documentation is solid, core concepts are clear
 
 ---
 
-## ADR-011：文件存储使用本地文件系统
+## ADR-007: OpenAPI for API type synchronization
 
-**状态**：已决策
+**Status**: Decided
 
-**决策**：P0 上传文件存储在本地文件系统。
+**Decision**: Do not maintain a shared types package between frontend and backend. Generate frontend types from the backend OpenAPI spec.
 
-**原因**：
-- P0 是内部验证，本地存储零成本
-- 文件路径抽象一层后，P1 可无缝迁移到对象存储
-- 部署简单，无需配置云存储
-
-**未来**：P1 评估 MinIO / 阿里云 OSS / AWS S3。
+**Rationale**:
+- Reduces shared package maintenance cost
+- Backend is the source of truth for types
+- Use `openapi-typescript` for automatic generation
 
 ---
 
-## ADR-012：P0 是内部验证工具，未来目标 SaaS
+## ADR-008: Video rendering starts with image carousel + subtitles
 
-**状态**：已决策
+**Status**: Decided
 
-**背景**：需要明确 P0 的定位，以指导技术选型和功能范围。
+**Decision**: For P0, video rendering does not aim for complex editing. Start with an image carousel + subtitles + BGM format.
 
-**决策**：P0 先作为内部工具跑通核心 workflow，但技术选型为未来 SaaS 化做准备。
-
-**影响**：
-- 前端选 TanStack Start 而不是 Streamlit
-- 数据库选 PostgreSQL 而不是 SQLite
-- 代码结构考虑多用户、权限扩展
-- P0 不实现计费、多租户，但预留扩展空间
+**Rationale**:
+- Quickly validate content generation quality
+- Reduces rendering complexity
+- Can be replaced with a more sophisticated video engine later
 
 ---
 
-## 待决策事项
+## ADR-009: Voice cloning deferred to P1
 
-| 事项 | 建议 | 决策者 |
+**Status**: Decided
+
+**Decision**: Use generic TTS for P0; integrate voice cloning in P1.
+
+**Rationale**:
+- P0 first validates script and content quality
+- Voice cloning involves additional issues like authorization and quality evaluation
+- Generic TTS is sufficient for demo needs
+
+---
+
+## ADR-010: PostgreSQL as the database
+
+**Status**: Decided
+
+**Decision**: Use PostgreSQL for P0.
+
+**Rationale**:
+- End goal is SaaS; PostgreSQL is a production-grade choice
+- Better than SQLite for multi-user, concurrency, and data integrity
+- Team familiarity, mature ecosystem
+- Simple local startup with Docker Compose
+
+**Alternatives**:
+- SQLite: simpler deployment, but poor scalability
+
+---
+
+## ADR-011: Local file system for file storage
+
+**Status**: Decided
+
+**Decision**: Store uploaded files on the local file system for P0.
+
+**Rationale**:
+- P0 is internal validation; local storage is zero-cost
+- After abstracting file paths, P1 can seamlessly migrate to object storage
+- Simple deployment, no cloud storage configuration needed
+
+**Future**: Evaluate MinIO / Alibaba Cloud OSS / AWS S3 in P1.
+
+---
+
+## ADR-012: P0 is an internal validation tool; future target is SaaS
+
+**Status**: Decided
+
+**Context**: Need to clarify P0's positioning to guide tech choices and feature scope.
+
+**Decision**: Run P0 first as an internal tool to validate the core workflow, but choose technologies that prepare for future SaaS.
+
+**Impact**:
+- Frontend chose TanStack Start instead of Streamlit
+- Database chose PostgreSQL instead of SQLite
+- Code structure considers multi-user and permission extensibility
+- P0 does not implement billing or multi-tenancy, but leaves room for extension
+
+---
+
+## Open items
+
+| Item | Recommendation | Decision maker |
 |:---|:---|:---|
-| 产品名称 | 待定 | 左总 |
-| 任务队列 | 纯 asyncio（P0 足够） | 技术 |
-| 语音识别 | P0 不做，P1 评估 FunASR / 讯飞听见 | 技术 |
-| 视频渲染引擎 | MoviePy + FFmpeg | 技术 |
-| 语音合成服务 | P0 不做，P1 评估 MiniMax TTS / 科大讯飞 | 技术 |
-| 配乐资源 | Uppbeat / Artlist | 产品/技术 |
-| 是否支持 URL 输入 | 本期不做 | 产品 |
-| 首期支持语言 | 中英双语 | 产品 |
-| 付费模式 | 本期不设计 | 左总 |
+| Product name | TBD | CEO Zuo |
+| Task queue | Pure asyncio (sufficient for P0) | Engineering |
+| Speech recognition | Not in P0; evaluate FunASR / iFlytek in P1 | Engineering |
+| Video rendering engine | MoviePy + FFmpeg | Engineering |
+| Speech synthesis service | Not in P0; evaluate MiniMax TTS / iFlytek in P1 | Engineering |
+| Music assets | Uppbeat / Artlist | Product / Engineering |
+| URL input support | Not in this phase | Product |
+| Languages supported in first phase | Chinese and English | Product |
+| Pricing model | Not designed in this phase | CEO Zuo |
 
-## ADR-013：国际化、主题切换与欧洲市场定位
+## ADR-013: Internationalization, theme switching, and European market positioning
 
-**状态**：已决策
+**Status**: Decided
 
-**背景**：Repurposer 面向欧洲知识型演讲市场，同时需要支持明暗主题切换和欧洲机构的合规诉求。
+**Context**: Repurposer targets the European knowledge-speaking market, while also needing to support light/dark theme switching and compliance requirements for European institutions.
 
-**决策**：
-1. 前端使用 `i18next` + `react-i18next` 实现国际化。
-2. **默认语言为英文**；用户选择写入 `repurposer-lang` cookie，刷新后由客户端恢复。
-3. **默认主题为暗色**；用户手动切换后写入 `localStorage`。`system` 偏好也按暗色处理。
-4. 主题切换使用 View Transition API，从点击位置做圆形扩散揭开动画。
-5. 所有图标统一使用 `lucide-react`。
-6. **产品定位从“viral 短视频”转向“知识资产化”**：核心输出是 LinkedIn 长帖、金句卡、多语言摘要、Newsletter 等，目标用户为学术/企业峰会演讲者与研究机构。
-7. **多语言输出是欧洲市场入场门票**：除界面语言外，内容生成需覆盖 FR/DE/ES/IT 等欧洲主流语言。
-8. **GDPR / EU 数据驻留作为销售卖点**：通过 Cast AI Kimchi 的 M3 EU 部署能力，提供可选的 EU 数据处理，满足欧洲机构采购门槛。
+**Decision**:
+1. Use `i18next` + `react-i18next` for internationalization on the frontend.
+2. **Default language is English**; user selection is written to the `repurposer-lang` cookie, restored by the client after refresh.
+3. **Default theme is dark**; manual user switch is written to `localStorage`. The `system` preference is also treated as dark.
+4. Theme switching uses the View Transition API with a circular reveal animation from the click position.
+5. All icons use `lucide-react` uniformly.
+6. **Product positioning shifts from "viral short videos" to "knowledge assetization"**: core outputs are LinkedIn long posts, quote cards, multi-language summaries, newsletters, etc. Target users are academic/corporate summit speakers and research institutions.
+7. **Multi-language output is the entry ticket to the European market**: in addition to UI language, content generation must cover FR/DE/ES/IT and other major European languages.
+8. **GDPR / EU data residency as a sales differentiator**: through Cast AI Kimchi's M3 EU deployment capability, provide optional EU data processing to meet the procurement threshold of European institutions.
 
-**原因**：
-- `i18next` 成熟、类型可约束，适合本项目规模。
-- SSR 场景下，首屏固定英文 + 客户端恢复 cookie 可以避免 hydration 不匹配。
-- `localStorage` + anti-FOUC inline script 能避免主题闪烁。
-- View Transition API 在 Chromium/Safari 提供原生流畅动画，Firefox 自动降级。
-- 统一图标库避免风格混乱和手动维护 SVG。
-- 欧洲知识型演讲市场是 OpusClip/Descript 覆盖不足的空白；LinkedIn 是 B2B 知识传播核心阵地；多语言和 GDPR 合规是硬性门槛。
-- Agent 驱动的 Analyzer → Script → Review → Reviser → HITL 闭环满足欧洲用户对内容质量和可控性的高要求。
+**Rationale**:
+- `i18next` is mature, type-constrainable, and fits the scale of this project.
+- In SSR scenarios, fixing the first render to English + client-side cookie restoration avoids hydration mismatch.
+- `localStorage` + anti-FOUC inline script prevents theme flashing.
+- View Transition API provides native smooth animations on Chromium/Safari, with automatic degradation on Firefox.
+- A unified icon library avoids style inconsistency and manual SVG maintenance.
+- The European knowledge-speaking market is a whitespace not well covered by OpusClip/Descript; LinkedIn is the core B2B knowledge dissemination channel; multi-language and GDPR compliance are hard requirements.
+- The agent-driven Analyzer → Script → Review → Reviser → HITL loop meets European users' high demands for content quality and controllability.
 
-**约束与注意事项**：
-- shadcn 组件基于 base-ui，触发器使用 `render` prop 而非 `asChild`。
-- 新增用户文案必须同时更新 `zh.ts` 和 `en.ts`，保持键结构一致。
-- 浏览器 API（`localStorage`、`matchMedia`、`document.startViewTransition`）必须放在客户端代码路径中。
-- 前端文案、示例、工具网格避免使用“抖音/TikTok/爆款/viral”等面向 C 端娱乐短视频的描述。
+**Constraints and notes**:
+- shadcn components are based on base-ui; triggers use the `render` prop, not `asChild`.
+- New user-facing copy must be updated in both `en.ts` and `zh.ts` simultaneously, keeping key structures consistent.
+- Browser APIs (`localStorage`, `matchMedia`, `document.startViewTransition`) must be placed in client-side code paths.
+- Frontend copy, examples, and tool grids should avoid descriptions targeting C-end entertainment short videos like "Douyin/TikTok/viral/爆款".
 
-**相关文件**：
+**Related files**:
 - `apps/web/src/lib/i18n/`
 - `apps/web/src/lib/theme/ThemeProvider.tsx`
 - `apps/web/src/components/language-switcher.tsx`
@@ -257,30 +257,30 @@ repurposer/
 - `CLAUDE.md`
 - `.claude/projects/-Users-sylas-repurposer/memory/europe-strategy-positioning.md`
 
-## ADR-014：Sidebar 参考 OpusClip 布局与 Brand Template 页面
+## ADR-014: Sidebar references OpusClip layout and Brand Template page
 
-**状态**：已决策
+**Status**: Decided
 
-**背景**：随着导航项增加（Home、Projects、Speakers、Library、Brand template），首页顶部 bar 承载过多全局操作；同时用户希望复用 OpusClip 的 sidebar 交互与 Brand template 配置页面。
+**Context**: As navigation items grow (Home, Projects, Speakers, Library, Brand template), the top bar on the home page carries too many global actions; meanwhile, users want to reuse OpusClip's sidebar interaction and Brand template configuration page.
 
-**决策**：
-1. 采用左侧可折叠 icon sidebar（`shadcn/ui Sidebar collapsible="icon"`），参考 OpusClip 的隐藏/展开交互。
-2. Sidebar 顶部放置 workspace logo、折叠按钮和用户头像下拉菜单；下拉菜单已简化为 Profile / Settings / Logout，去除 OpusClip 中过多的业务项。
-3. Sidebar 中间按 `Create`（Home、Projects、Speakers）和 `Post`（Library、Brand template）分组导航。
-4. 新增 `/brand-template` 页面：左侧设置面板（字体、主色、强调色、Logo、默认 CTA、语言调性），右侧实时预览 quote card 与 LinkedIn post 样例。
-5. 新增 i18n key：`nav.create`、`nav.post`、`nav.brandTemplate`、`brandTemplate.*`、`common.profile/settings/logout/helpCenter/inviteMembers/freePlan/new`。
+**Decision**:
+1. Adopt a left collapsible icon sidebar (`shadcn/ui Sidebar collapsible="icon"`), referencing OpusClip's hide/expand interaction.
+2. Place the workspace logo, collapse button, and user avatar dropdown at the top of the sidebar; the dropdown is simplified to Profile / Settings / Logout, removing excessive business items from OpusClip.
+3. Group navigation in the middle by `Create` (Home, Projects, Speakers) and `Post` (Library, Brand template).
+4. Add a `/brand-template` page: left settings panel (font, primary color, accent color, logo, default CTA, language tone), right real-time preview of quote card and LinkedIn post sample.
+5. Add i18n keys: `nav.create`, `nav.post`, `nav.brandTemplate`, `brandTemplate.*`, `common.profile/settings/logout/helpCenter/inviteMembers/freePlan/new`.
 
-**原因**：
-- 把全局导航从首页内容区抽离，首页能更聚焦在 prompt 输入和知识资产工具网格。
-- Brand template 是知识资产化 SaaS 的核心配置入口，方便用户统一控制输出风格。
-- OpusClip 的 sidebar 模式在视频/内容创作工具中已被验证，用户学习成本低。
+**Rationale**:
+- Extract global navigation from the home page content area, so the home page can focus on prompt input and the knowledge asset tool grid.
+- Brand template is a core configuration entry for a knowledge assetization SaaS, allowing users to control output style uniformly.
+- OpusClip's sidebar mode has been validated in video/content creation tools, with low user learning cost.
 
-**约束与注意事项**：
-- 继续使用 base-ui 的 `render` prop，不用 `asChild`。
-- 新增 sidebar 入口必须同步更新 `zh.ts`/`en.ts` 的 `nav.*` key。
-- Brand template 当前为前端 mock 预览，后续需对接后端 `BrandTemplate` 配置表。
+**Constraints and notes**:
+- Continue using base-ui's `render` prop, not `asChild`.
+- New sidebar entries must be synchronized with `zh.ts`/`en.ts` `nav.*` keys.
+- Brand template is currently a frontend mock preview; needs to connect to the backend `BrandTemplate` config table later.
 
-**相关文件**：
+**Related files**:
 - `apps/web/src/components/app-sidebar.tsx`
 - `apps/web/src/routes/brand-template.tsx`
 - `apps/web/src/routes/index.tsx`
@@ -289,231 +289,231 @@ repurposer/
 - `CLAUDE.md`
 - `.claude/projects/-Users-sylas-repurposer/memory/repurposer-sidebar-opusclip-reference.md`
 
-## ADR-015：ORM 用 SQLAlchemy，迁移工具使用 Alembic
+## ADR-015: ORM uses SQLAlchemy, migration tool uses Alembic
 
-**状态**：已实施
+**Status**: Implemented
 
-**背景**：后端已使用 SQLAlchemy 2.0（`[asyncio]` + asyncpg）作为 ORM。早期使用启动时 `Base.metadata.create_all()` 建表，但随着功能演进，需要修改已有表的列约束（例如 `projects.speaker_id` 改为 nullable），`create_all` 无法处理这类变更。
+**Context**: The backend already uses SQLAlchemy 2.0 (`[asyncio]` + asyncpg) as the ORM. Early on, tables were created with `Base.metadata.create_all()` at startup, but as features evolved, existing table columns and constraints needed to be modified (e.g., `projects.speaker_id` changed to nullable). `create_all` cannot handle such changes.
 
-**决策**：
-1. **不更换 ORM**：SQLAlchemy 2.0 async 已是正确选择，不评估替代品。
-2. **不为风格批量重写**：现有旧式 `Column(...)` 不重写成 2.0 的 `mapped_column`/`Mapped[]`/`relationship`（纯类型提示改进，不影响功能）；新表可酌情用新写法，但不强制。
-3. **使用 Alembic 管理 schema 变更**：已初始化 `alembic.ini`、`migrations/env.py` 和 `migrations/versions/`。
-4. **应用启动时自动迁移**：`app/models/database.py` 的 `init_db()` 在 lifespan 中调用 `alembic.command.upgrade(..., "head")`，确保新环境或 CI 自动同步到最新 schema。
-5. **Alembic env.py 使用同步驱动**：主应用继续使用 `postgresql+asyncpg`，Alembic 迁移使用 `postgresql+psycopg2`，避免在已有 uvloop 事件循环中调用 `asyncio.run()` 的问题。
+**Decision**:
+1. **Do not switch ORMs**: SQLAlchemy 2.0 async is the correct choice; no alternatives are evaluated.
+2. **Do not bulk-rewrite for style**: existing legacy `Column(...)` syntax is not rewritten to 2.0's `mapped_column`/`Mapped[]`/`relationship` (pure type-hint improvement, no functional impact); new tables may optionally use the new syntax, but it is not mandatory.
+3. **Use Alembic for schema changes**: `alembic.ini`, `migrations/env.py`, and `migrations/versions/` are already initialized.
+4. **Auto-migrate on application startup**: `app/models/database.py` `init_db()` calls `alembic.command.upgrade(..., "head")` in the lifespan, ensuring new environments or CI auto-sync to the latest schema.
+5. **Alembic env.py uses a synchronous driver**: the main app continues with `postgresql+asyncpg`; Alembic migrations use `postgresql+psycopg2`, avoiding the issue of calling `asyncio.run()` inside an existing uvloop event loop.
 
-**迁移工作流**：
+**Migration workflow**:
 
 ```bash
 cd apps/api
 
-# 应用迁移
+# Apply migrations
 uv run alembic upgrade head
 
-# 查看当前版本
+# Check current version
 uv run alembic current
 
-# 修改 models 后生成新迁移
+# Generate new migration after modifying models
 uv run alembic revision --autogenerate -m "describe change"
 
-# 回滚一级
+# Rollback one level
 uv run alembic downgrade -1
 ```
 
-**原因 / 注意**：
-- `create_all` **只建缺失的表，不会修改已存在表的列**——给已有表加列/改约束时它静默无效，模型与库会不一致并在运行时报错。
-- 自动迁移适合本地开发和简单部署；生产环境建议在部署流程中显式执行 `alembic upgrade head`，而不是依赖应用启动时的自动迁移。
-- 生成迁移后务必人工检查生成的脚本，autogenerate 不是 100% 准确（例如 enum、复杂约束可能需要手动调整）。
+**Rationale / Notes**:
+- `create_all` **only creates missing tables, it does not modify columns on existing tables** — adding columns or changing constraints on existing tables silently does nothing, causing model/database inconsistency and runtime errors.
+- Auto-migration is suitable for local development and simple deployments; for production, it is recommended to explicitly run `alembic upgrade head` in the deployment pipeline rather than relying on auto-migration at application startup.
+- After generating a migration, always manually review the generated script; autogenerate is not 100% accurate (e.g., enums, complex constraints may need manual adjustment).
 
-**相关文件**：
+**Related files**:
 - `apps/api/alembic.ini`
 - `apps/api/migrations/env.py`
 - `apps/api/migrations/versions/`
-- `apps/api/app/models/database.py`（`init_db`）
+- `apps/api/app/models/database.py` (`init_db`)
 - `apps/api/app/models/tables.py`
 - `apps/api/pyproject.toml`
 
-## ADR-016：竖屏短片编辑器——钉死 clip-spec 契约，Remotion 作为第一渲染器（可替换黑盒）
+## ADR-016: Vertical short video editor — lock down the clip-spec contract, Remotion as the first renderer (replaceable black box)
 
-**状态**：已决策（详细设计见 [VIDEO_EDITOR.md](./VIDEO_EDITOR.md)）
+**Status**: Decided (detailed design in [VIDEO_EDITOR.md](./VIDEO_EDITOR.md))
 
-**背景**：「竖屏短片成片」确定为 MVP 必须项，且必须可编辑。需要在"自研 FFmpeg / Remotion / CapCut Web 客户端引擎"之间定型，并明确编辑能做到什么级别。
+**Context**: "Vertical short video final cut" is confirmed as a required MVP item, and must be editable. Need to finalize the choice among "self-built FFmpeg / Remotion / CapCut Web client engine", and clarify what level of editing is feasible.
 
-**决策**：
-1. **钉死唯一契约：声明式 `clip-spec(JSON)`**（渲染器无关，只描述"是什么"：segment 列表 / 裁切 / 字幕轨 / 样式预设 / 标题 / 配乐 / 品牌）。渲染器是契约背后的**可替换实现**。
-2. **第一个渲染器用 Remotion**（服务端，无头 Chrome + 内部 FFmpeg），当作 `spec→MP4+SRT` 的**黑盒**；Node 渲染服务用 pnpm 启动、自托管 EU，由现有 Python 队列触发。
-3. **品类定位 = OpusClip 类**（服务端流水线 + 浏览器瘦编辑面 + 甩剪映精剪），**不做 CapCut Web 客户端引擎**。
-4. **编辑形态 = Descript 式文档编辑**：文字稿编辑（删句=剪段，非破坏性可恢复）+ 词↔时间码 + **单轨 trim**；**不做多轨 NLE / 图层合成 / 转场特效 / B-roll 库 / 自动人脸追踪**（L3，甩下游）。
-5. **样式限定在预设枚举**（CSS 与 libass 都能表达），保证"预览=成片"且保留将来换手搓 FFmpeg 的低成本。
-6. **ASR（词级时间戳）从可选 P1 升级为硬前置**；视频需**可流式播放/seek**（本地文件系统 + FastAPI Range 端点即可，**对象存储非必需**，按 ADR-011 留到规模化）。没有 ASR + 可播放视频，编辑器搭不起来。
+**Decision**:
+1. **Lock down the single contract: declarative `clip-spec(JSON)`** (renderer-agnostic, only describes "what it is": segment list / crop / subtitle track / style preset / title / music / brand). The renderer is a **replaceable implementation** behind the contract.
+2. **First renderer uses Remotion** (server-side, headless Chrome + internal FFmpeg), treated as a **black box** for `spec→MP4+SRT`; Node render service starts with pnpm, self-hosted in EU, triggered by the existing Python queue.
+3. **Category positioning = OpusClip class** (server-side pipeline + browser thin editing surface + hand off to CapCut for fine editing), **not CapCut Web client engine**.
+4. **Editing form = Descript-style document editing**: transcript editing (delete sentence = cut segment, non-destructively recoverable) + word↔timecode + **single-track trim**; **no multi-track NLE / layer compositing / transition effects / B-roll library / auto face tracking** (L3, hand off to downstream).
+5. **Styles limited to preset enums** (expressible by both CSS and libass), guaranteeing "preview = final cut" and preserving low-cost future migration to hand-built FFmpeg.
+6. **ASR (word-level timestamps) upgraded from optional P1 to hard prerequisite**; video needs to be **streamable/seekable** (local file system + FastAPI Range endpoint is sufficient, **object storage not required**, deferred to scale per ADR-011). Without ASR + playable video, the editor cannot be built.
 
-**原因**：
-- 我们的任务是"处理已有素材"，编辑需求最高只到"裁段+字幕+样式"，够不到多轨 NLE；自研 WASM 引擎是给不存在的需求付几年工程。
-- Remotion 让 parity（预览=成片）结构上天然成立、媒体脏活成熟、`<Player>` 直接当预览、契合 React 栈——对小团队是更快到精致 MVP 的路径。
-- 因为契约稳定，**低后悔**：将来账单/规模有压力可换手搓 FFmpeg（clip-spec→filtergraph + 两端共享 libass）或客户端 WebCodecs，spec 不动。
+**Rationale**:
+- Our task is "processing existing material"; editing needs top out at "cut segments + subtitles + styles", far from multi-track NLE; self-building a WASM engine is paying years of engineering for a non-existent need.
+- Remotion makes parity (preview = final cut) structurally natural, handles media dirty work maturely, `<Player>` directly serves as preview, fits the React stack — a faster path to a polished MVP for a small team.
+- Because the contract is stable, **low regret**: if bills/scale become painful later, can switch to hand-built FFmpeg (clip-spec→filtergraph + shared libass on both ends) or client-side WebCodecs, without changing the spec.
 
-**代价 / 注意**：
-- 引入一个 Node 渲染服务（多语言栈，但边界是干净黑盒）+ Remotion license（4+ 人 $25/seat 或 $0.01/render）。
-- "无头 Chrome 逐帧渲处理任务"较重，但 MVP 规模（短片）无碍，高量再优化或换手搓。
-- Python 没有 Remotion 等价物（web-tech parity 范式绑死 JS/浏览器）：要 parity 就接受 Node；坚持纯 Python 则落到 ffmpeg-python + 共享 libass 手搓（另一个范式）。
+**Costs / Notes**:
+- Introduces a Node render service (polyglot stack, but boundary is a clean black box) + Remotion license (4+ people $25/seat or $0.01/render).
+- "Headless Chrome frame-by-frame rendering" is heavy, but MVP scale (short clips) is fine; optimize or switch at high volume.
+- Python has no Remotion equivalent (web-tech parity paradigm is tied to JS/browser): for parity, accept Node; insist on pure Python and you land on ffmpeg-python + shared libass hand-building (another paradigm).
 
-**相关文件**：
+**Related files**:
 - `docs/VIDEO_EDITOR.md`
-- `apps/api/app/models/tables.py`（`Clip` 加 `render_spec/render_status/render_error/srt_url`）
-- `apps/api/app/worker.py`、`apps/api/app/services/jobs.py`（渲染认领源）
+- `apps/api/app/models/tables.py` (`Clip` adds `render_spec/render_status/render_error/srt_url`)
+- `apps/api/app/worker.py`, `apps/api/app/services/jobs.py` (render claim source)
 - `.claude/projects/-Users-sylas-repurposer/memory/repurposer-video-editing-direction.md`
 
-## ADR-017：Postgres 当任务队列（不上 Redis），独立 worker 进程
+## ADR-017: Postgres as the task queue (no Redis), standalone worker process
 
-**状态**：已实施
+**Status**: Implemented
 
-**背景**：ASR、视频渲染等是耗时重活；原先生成跑在 FastAPI `BackgroundTasks`（进程内、重启即丢、无重试、无并发控制），素材上传是同步阻塞。需要可靠的异步执行层。
+**Context**: ASR, video rendering, etc. are time-consuming heavy tasks; originally generation ran in FastAPI `BackgroundTasks` (in-process, lost on restart, no retries, no concurrency control), and asset uploads were synchronous blocking. A reliable async execution layer is needed.
 
-**决策**：
-1. **用 Postgres `FOR UPDATE SKIP LOCKED` 把数据库当队列**，**不引入 Redis/Celery**（符合 ADR-001 简单优先；将来横向扩展再换 arq/Celery 是一处替换）。
-2. 独立 **worker 进程**（`python -m app.worker`）轮询认领 `Asset`（待处理）和 `WorkflowRun`（待生成），与 API 进程物理隔离；启动 `reap_stale` 重置孤儿任务。
-3. `Asset` 加 `processing_status`(pending/processing/completed/failed) + `processing_error`；上传改为落盘即返回 pending，前端轮询。
-4. `app/services/asset_processing.py` 按类型分发 processor——**ASR/OCR 未来唯一接入点**（现 video/audio 为 no-op）。
-5. 生成统一走 `/generate` 的 outputs 多选（clips/linkedin/quote_cards/summary/blog），删除原先 4 个重复的同步生成端点。
+**Decision**:
+1. **Use Postgres `FOR UPDATE SKIP LOCKED` as the queue**, **do not introduce Redis/Celery** (fits ADR-001 simplicity-first; replacing with arq/Celery for horizontal scaling later is a single swap).
+2. Standalone **worker process** (`python -m app.worker`) polls and claims `Asset` (pending processing) and `WorkflowRun` (pending generation), physically isolated from the API process; starts `reap_stale` to reset orphaned tasks.
+3. `Asset` adds `processing_status` (pending/processing/completed/failed) + `processing_error`; upload returns pending immediately after disk write, frontend polls.
+4. `app/services/asset_processing.py` dispatches processors by type — **future single entry point for ASR/OCR** (currently video/audio is no-op).
+5. Generation unified through `/generate` outputs multi-select (clips/linkedin/quote_cards/summary/blog), deleting the previous 4 duplicate synchronous generation endpoints.
 
-**原因**：
-- 内部验证阶段（ADR-012）的吞吐/规模还用不到 Redis；DB 当队列零新增中间件。
-- worker 进程隔离让重活不拖在线请求；`SKIP LOCKED` 支持多 worker 安全并发。
+**Rationale**:
+- Internal validation phase (ADR-012) throughput/scale does not yet need Redis; DB-as-queue adds zero new middleware.
+- Worker process isolation prevents heavy tasks from dragging down online requests; `SKIP LOCKED` supports safe concurrent multi-worker.
 
-**相关文件**：
-- `apps/api/app/worker.py`、`apps/api/app/services/jobs.py`、`apps/api/app/services/asset_processing.py`
-- `apps/api/app/models/tables.py`（`Asset.processing_status`）
-- `scripts/dev.sh`、`docker-compose.yml`（worker 进程，无 redis）
+**Related files**:
+- `apps/api/app/worker.py`, `apps/api/app/services/jobs.py`, `apps/api/app/services/asset_processing.py`
+- `apps/api/app/models/tables.py` (`Asset.processing_status`)
+- `scripts/dev.sh`, `docker-compose.yml` (worker process, no redis)
 - `.claude/projects/-Users-sylas-repurposer/memory/repurposer-queue-foundation.md`
 
-## ADR-018：渲染服务独立为 apps/render + 共享 packages/clip + pnpm workspace
+## ADR-018: Render service isolated as apps/render + shared packages/clip + pnpm workspace
 
-**状态**：已实施
+**Status**: Implemented
 
-**背景**：Remotion 的 parity（预览=成片）要求 `<Clip>` 组件被 web 的 `<Player>`（预览）和渲染服务的 `renderMedia`（出片）**共用同一份**。需要决定渲染服务和这份共享组件放在仓库哪里，且不破坏 ADR-001 的运行时隔离。
+**Context**: Remotion's parity (preview = final cut) requires the `<Clip>` component to be **shared** between the web's `<Player>` (preview) and the render service's `renderMedia` (final cut). Need to decide where in the repo the render service and this shared component live, without breaking ADR-001's runtime isolation.
 
-**决策**：
-1. **渲染服务独立为 `apps/render/`**（Node/pnpm，`@remotion/bundler` + `@remotion/renderer` + express），对外是 `POST /render: spec→MP4+SRT` 黑盒。**不放 `apps/api/` 下**（api 是 Python/uv，混运行时违反 ADR-001）。
-2. **`<Clip>` 组件 + clip-spec TS 类型抽到 `packages/clip/`** 共享包（`@repurposer/clip`），web 和 render 都 import。
-3. **用轻量 pnpm workspace**（`pnpm-workspace.yaml` 含 `apps/web`/`apps/render`/`packages/*`）串起三个 TS 包；**`apps/api` 独立用 uv，不进 workspace**。
-4. `onlyBuiltDependencies` 从 `apps/web` 移到 workspace 根。
+**Decision**:
+1. **Render service isolated as `apps/render/`** (Node/pnpm, `@remotion/bundler` + `@remotion/renderer` + express), externally a `POST /render: spec→MP4+SRT` black box. **Not placed under `apps/api/`** (api is Python/uv, mixing runtimes violates ADR-001).
+2. **`<Clip>` component + clip-spec TS types extracted to `packages/clip/`** shared package (`@repurposer/clip`), imported by both web and render.
+3. **Use a lightweight pnpm workspace** (`pnpm-workspace.yaml` includes `apps/web`/`apps/render`/`packages/*`) to connect the three TS packages; **`apps/api` stays independent with uv, not in the workspace**.
+4. `onlyBuiltDependencies` moved from `apps/web` to the workspace root.
 
-**原因**：
-- parity 要求组件共享 —— 这是选 Remotion 的全部理由，不能两边各写一份。
-- pnpm workspace 是**最轻的共享机制**（一个 yaml），不是 ADR-001 反对的 Turborepo/Nx/Bazel；这是对 ADR-001「无共享代码」前提的合理演进（现在确实有一份必须共享的 `<Clip>`）。
-- api 保持 Python/uv 完全隔离。
+**Rationale**:
+- Parity requires component sharing — this is the entire reason for choosing Remotion; cannot write two separate copies.
+- pnpm workspace is the **lightest sharing mechanism** (one yaml), not the Turborepo/Nx/Bazel that ADR-001 opposes; this is a reasonable evolution of ADR-001's "no shared code" premise (there is now a piece that must be shared: `<Clip>`).
+- api remains fully isolated as Python/uv.
 
-**约束与注意**：
-- render 的 `spec.source.url` 必须是**绝对 URL**（api worker 调用前把存储 seam 的相对 URL 绝对化）。
-- render 把 MP4/SRT 写到共享 `data/outputs`，api 经 Range 端点服务（存储 seam）。
-- 首次渲染 Remotion 会下载无头 Chromium（约几百 MB）；个别原生依赖的 build script 可能需 `pnpm approve-builds`。
-- `<Clip>` MVP 渲染首个 kept 段；多段 concat（文字稿删句产生间隔）已实施。
-- 品牌（logo/CTA/字幕色/字号/字体/fill/片头尾）与配乐以已解析值**烘焙进 `render_spec`**，`<Clip>` 消费 `spec.brand` / `spec.music`；渲染服务不读 DB。
-- 字幕字体使用 `@remotion/google-fonts`（拉丁子集），首次渲染从 Google CDN 拉取；离线场景未来可换 `@remotion/fonts` 本地 woff2。
+**Constraints and notes**:
+- render's `spec.source.url` must be an **absolute URL** (the API worker absolutizes the storage seam's relative URL before calling).
+- render writes MP4/SRT to shared `data/outputs`, api serves through the Range endpoint (storage seam).
+- First Remotion render will download headless Chromium (~hundreds of MB); some native dependency build scripts may need `pnpm approve-builds`.
+- `<Clip>` MVP renders the first kept segment; multi-segment concat (gaps from transcript sentence deletion) is implemented.
+- Brand (logo/CTA/subtitle color/font size/font/fill/opening/closing) and music are **baked into `render_spec`** as resolved values; `<Clip>` consumes `spec.brand` / `spec.music`; render service does not read the DB.
+- Subtitle fonts use `@remotion/google-fonts` (Latin subset), fetched from Google CDN on first render; offline scenarios may switch to `@remotion/fonts` local woff2 in the future.
 
-**相关文件**：
-- `apps/render/`（`src/server.ts`/`render.ts`/`srt.ts`）、`packages/clip/`（`src/Clip.tsx`/`Root.tsx`/`types.ts`/`fonts.ts`）
-- `pnpm-workspace.yaml`、`scripts/dev.sh`、`README.md`、`docs/VIDEO_EDITOR.md` §6
+**Related files**:
+- `apps/render/` (`src/server.ts`/`render.ts`/`srt.ts`), `packages/clip/` (`src/Clip.tsx`/`Root.tsx`/`types.ts`/`fonts.ts`)
+- `pnpm-workspace.yaml`, `scripts/dev.sh`, `README.md`, `docs/VIDEO_EDITOR.md` §6
 
-**容器化（补充）**：
-- 全栈 5 服务都有 Dockerfile：`api`（uv，装 `libgomp1` 给 ctranslate2）、`worker`（复用 api 镜像换 `command`）、`render`、`web`。
-- **`render` / `web` 的构建上下文是仓库根**——它们 import workspace 包 `@repurposer/clip`，子目录上下文拿不到 `pnpm-workspace.yaml` / `pnpm-lock.yaml` / `packages/clip`。Dockerfile 先 COPY 各 workspace 的 `package.json`（pnpm 解析整图所需）+ lockfile 装依赖，再 COPY 源码，最大化层缓存。
-- `render` 镜像装无头 Chromium 的系统库（libnss3/libatk/libgbm/字体等）；Chromium 二进制在**首次渲染时惰性下载**（不在构建期拉，避免构建依赖外网、在 CI/受限网络上挂起；render 服务运行时本就有外网用于回拉源视频）。生产可在 Remotion 下载目录挂缓存卷避免重启重下。
-- 容器内服务名互联：`API_PUBLIC_URL=http://api:8000`、`RENDER_URL=http://render:3001/render`（覆盖 `config.py` 里的 localhost 默认）。render 写共享卷 `./data/outputs`，api 经 Range 端点服务。
-- **`web` 用 `vite preview` 起 SSR**：MVP/staging 够用；高流量再换围绕导出 fetch handler（`dist/server/server.js`）的轻量 node http 适配层。该 SSR 路径已通过镜像构建与单帧渲染冒烟验证。
+**Containerization (supplement)**:
+- All 5 full-stack services have Dockerfiles: `api` (uv, installs `libgomp1` for ctranslate2), `worker` (reuses api image with different `command`), `render`, `web`.
+- **`render` / `web` build context is the repo root** — they import workspace package `@repurposer/clip`, and a subdirectory context cannot access `pnpm-workspace.yaml` / `pnpm-lock.yaml` / `packages/clip`. Dockerfile first COPYs each workspace's `package.json` (needed for pnpm to resolve the whole graph) + lockfile to install dependencies, then COPYs source code, maximizing layer cache.
+- `render` image installs headless Chromium system libraries (libnss3/libatk/libgbm/fonts, etc.); Chromium binary is **lazily downloaded on first render** (not pulled during build, avoiding build dependency on external network and hanging in CI/restricted networks; render service runtime already needs external network to pull source video). Production can mount a cache volume on the Remotion download directory to avoid re-downloading on restart.
+- Container service interconnection: `API_PUBLIC_URL=http://api:8000`, `RENDER_URL=http://render:3001/render` (overrides localhost defaults in `config.py`). render writes to shared volume `./data/outputs`, api serves through the Range endpoint.
+- **`web` uses `vite preview` for SSR**: sufficient for MVP/staging; switch to a lightweight node http adapter around the exported fetch handler (`dist/server/server.js`) for high traffic. This SSR path has been smoke-tested through image build and single-frame rendering.
 
-## ADR-019：配乐用内置 mood 曲库（用户供曲）
+## ADR-019: Music uses built-in mood library (user-provided tracks)
 
-**状态**：已实施
+**Status**: Implemented
 
-**背景**：clip-spec 有 `music` 块，品牌模板有 `musicMood`，但缺"曲从哪来"。涉及版权，不能由 AI 自动抓取无授权音乐。
+**Context**: clip-spec has a `music` block, brand template has `musicMood`, but missing "where do tracks come from". Involves copyright; cannot have AI automatically grab unauthorized music.
 
-**决策**：
-1. **内置 mood 曲库**：`data/music/<mood>.<ext>`（支持 `.mp3/.m4a/.aac/.ogg/.wav`），用户/运营提供授权曲目。
-2. **按 mood 路由**：`GET /api/v1/music/<mood>` 扩展名无关，resolver 按 stem 找文件；带 Range 支持。
-3. **生成时烘焙**：`services/brand.py:music_from_template` 把 `BrandTemplate.musicMood` → `ClipMusic{track_id, url}`；`ClipMusic.enabled` 受 `musicEnabled` 控制。
-4. **渲染混音**：Remotion `<Audio src={url} volume={dbToLinear(gain_db)} loop>`。
+**Decision**:
+1. **Built-in mood library**: `data/music/<mood>.<ext>` (supports `.mp3/.m4a/.aac/.ogg/.wav`), tracks provided by users/operations with authorization.
+2. **Route by mood**: `GET /api/v1/music/<mood>` extension-agnostic, resolver finds files by stem; with Range support.
+3. **Bake at generation time**: `services/brand.py:music_from_template` maps `BrandTemplate.musicMood` → `ClipMusic{track_id, url}`; `ClipMusic.enabled` is controlled by `musicEnabled`.
+4. **Render mix**: Remotion `<Audio src={url} volume={dbToLinear(gain_db)} loop>`.
 
-**原因**：
-- 不引入第三方音乐 API/订阅，零新增依赖与费用。
-- 版权责任清晰：用户/运营只放已授权曲目；仓库不打包音乐。
-- 曲库可随运营扩展：加文件即可，无需改代码。
+**Rationale**:
+- No third-party music API/subscription, zero new dependencies or costs.
+- Copyright responsibility is clear: users/operations only place authorized tracks; repo does not bundle music.
+- Library can expand with operations: add files, no code changes needed.
 
-**相关文件**：
-- `apps/api/app/services/storage.py`（`resolve_music_safe` / `music_url`）
-- `apps/api/app/routers/files.py`（`/music/{mood}`）
-- `apps/api/app/services/brand.py`（`music_from_template`）
-- `packages/clip/src/Clip.tsx`（`<Audio>`）
+**Related files**:
+- `apps/api/app/services/storage.py` (`resolve_music_safe` / `music_url`)
+- `apps/api/app/routers/files.py` (`/music/{mood}`)
+- `apps/api/app/services/brand.py` (`music_from_template`)
+- `packages/clip/src/Clip.tsx` (`<Audio>`)
 - `data/music/README.md`
 
-## ADR-020：成片支持第二种 source kind —— "stills" 图片音频图
+## ADR-020: Final cut supports a second source kind — "stills" image+audio audiogram
 
-**状态**：已实施
+**Status**: Implemented
 
-**背景**：MVP 头号输出"竖屏精彩片段"原本只在有真人出镜 VIDEO 时才出片，纯音频演讲
-（播客/圆桌）和只有图片+要点的演讲全都出不了任何视频。而 Headliner / Typito / Canva
-等常见工具其实把 **图片 + 可选音频 + 文字** 组合成竖屏视频（audiogram），是一个连贯且
-常见的格式。
+**Context**: The MVP's top output "vertical highlight clips" originally only produced video when there was a real-person VIDEO source; pure audio speeches
+(podcasts/roundtables) and presentations with only images + key points could not produce any video at all. Meanwhile, tools like Headliner / Typito / Canva
+commonly combine **images + optional audio + text** into vertical videos (audiogram), which is a coherent and
+common format.
 
-**决策**：给 clip-spec 的 `ClipSource` 加判别字段，渲染器二分，video 路径完全不变（向后兼容）：
-1. `kind: "video" | "stills"`（默认 `"video"`）。
-2. `stills` 时 `image_urls: list[str]` 作垫底视觉（0→纯色 / 1→满屏 / N→按时长均分**硬切**轮播），
-   `url` 复用为**可选**语音轨（无录音为 `""`）。
-3. 有音频则复用 ASR 词级 `caption_track` + 语音轨；无音频则固定时长幻灯片
-   （每图 `SECS_PER_IMAGE=4s`，后端写一个合成 segment 定时长）。
-4. 生成时选源优先级：VIDEO → AUDIO → IMAGE；都没有则仍 `render_spec=None`（只出文本资产）。
+**Decision**: Add a discriminator field to clip-spec's `ClipSource`, renderer branches, video path unchanged (backward compatible):
+1. `kind: "video" | "stills"` (default `"video"`).
+2. For `stills`, `image_urls: list[str]` serves as the base visual (0→solid color / 1→full screen / N→hard-cut carousel evenly distributed by duration),
+   `url` is reused as an **optional** voice track (empty string if no recording).
+3. If audio is present, reuse ASR word-level `caption_track` + voice track; if no audio, fixed-duration slideshow
+   (each image `SECS_PER_IMAGE=4s`, backend writes a synthetic segment to fix duration).
+4. Source selection priority at generation time: VIDEO → AUDIO → IMAGE; if none are present, `render_spec=None` (text-only assets).
 
-**范围边界（守 L2）**：只做单轨硬切静图 + 现有逐词字幕 + title/logo/CTA/配乐/片头尾。
-**不做**（L3 或后续）：图间转场/交叉淡入、Ken-Burns 平移缩放、多句 kinetic-typography
-动画文字轨、B-roll 库、单图自由排版、波形动画。
+**Scope boundary (stay at L2)**: Only single-track hard-cut stills + existing word-by-word subtitles + title/logo/CTA/music/opening/closing.
+**Not doing** (L3 or later): image transitions/cross-fade, Ken-Burns pan/zoom, multi-sentence kinetic-typography
+animated text tracks, B-roll library, single-image free layout, waveform animation.
 
-**原因**：
-- 复用已建的 ASR（字幕时间轴）+ 品牌/配乐/片头尾渲染路径，零新增重依赖。
-- 契约描述"是什么"——"这条片由图片+可选音频构成"是合法的"是什么"，未来手搓 FFmpeg
-  渲染器同样需要这个判别字段，不是渲染器泄漏。
-- `<Clip>` 同一组件既预览又出片，stills 复用 `<Sequence>/<Series>/<Img>/<Audio>` 原语。
+**Rationale**:
+- Reuses already-built ASR (subtitle timeline) + brand/music/opening/closing rendering path, zero new heavy dependencies.
+- Contract describes "what it is" — "this clip is composed of images + optional audio" is a valid "what it is", and a future hand-built FFmpeg
+  renderer would also need this discriminator field; it is not a renderer leak.
+- `<Clip>` same component serves both preview and final cut; stills reuses `<Sequence>/<Series>/<Img>/<Audio>` primitives.
 
-**相关文件**：
-- `packages/clip/src/types.ts`（`ClipSource.kind` / `image_urls`）、`Clip.tsx`（kind 二分 + `splitFrames`）、`Root.tsx`（默认 spec）
-- `apps/api/app/models/schemas.py`（`ClipSource`）、`services/clip_spec.py`（`build_clip_spec` stills 分支 + `SECS_PER_IMAGE`）
-- `apps/api/app/services/generation.py`（选源优先级 VIDEO→AUDIO→IMAGE）、`services/rendering.py`（`_absolutize` 处理 `image_urls`）
-- `apps/web/src/routes/projects.$id.tsx`（上传按 MIME 推断类型，从不推断 voice_sample）
+**Related files**:
+- `packages/clip/src/types.ts` (`ClipSource.kind` / `image_urls`), `Clip.tsx` (kind branch + `splitFrames`), `Root.tsx` (default spec)
+- `apps/api/app/models/schemas.py` (`ClipSource`), `services/clip_spec.py` (`build_clip_spec` stills branch + `SECS_PER_IMAGE`)
+- `apps/api/app/services/generation.py` (source selection priority VIDEO→AUDIO→IMAGE), `services/rendering.py` (`_absolutize` handles `image_urls`)
+- `apps/web/src/routes/projects.$id.tsx` (upload infers type by MIME, never infers voice_sample)
 
-**未覆盖**：语音克隆配音仍未实现（独立阶段）；无头 Chromium 单帧渲染冒烟未在本轮跑通
-（stills 复用 video 路径同款 Remotion 原语，静态 + 单元层已验证）。
+**Not covered**: Voice clone dubbing is still not implemented (independent phase); headless Chromium single-frame rendering smoke test was not run in this round
+(stills reuses the same Remotion primitives as the video path, static + unit layer already validated).
 
-## ADR-021：Speaker = persisted memory（可选选择 / 未选自动创建 / 按用户隔离）
+## ADR-021: Speaker = persisted memory (optional selection / auto-create if not selected / per-user isolation)
 
-**状态**：已拍板（待落地，已修正）
+**Status**: Decided (pending implementation, corrected)
 
-**背景**：`Speaker` 与 `Persona` 在代码、文档、UI 中被混用，导致概念层出现"Speaker 是 CRM 联系人？还是用户画像？Persona 是独立实体还是 Speaker 的子字段？"等歧义。澄清后：**Speaker 本质是一次任务结束后被持久化的 memory**——记录用户的口吻、风格、偏好、声纹等稳定特征，对外仍叫 Speaker，内部就是 memory。
+**Context**: `Speaker` and `Persona` were used interchangeably in code, documentation, and UI, causing conceptual ambiguity such as "Is Speaker a CRM contact? Or a user profile? Is Persona a standalone entity or a sub-field of Speaker?" After clarification: **Speaker is essentially memory persisted after a task completes** — recording the user's tone, style, preferences, voiceprint, and other stable characteristics. Externally still called Speaker, internally it is memory.
 
-**决策**：
-1. **Speaker = persisted memory**：从任务输入（提示词 + 附件）经 M3 分析提取出的用户画像，任务结束后持久化到 `speakers` 表。
-2. **按用户隔离**：`speakers` 表加 `user_id`，用户只能看到和操作自己的 Speaker。
-3. **首页/项目创建可选选择**：输入框/项目创建表单中可以选已有 Speaker，但**不强制**。允许用户主动选择历史画像，也允许不选。
-4. **未选则自动创建**：如果用户未选 Speaker，系统在任务分析完成后自动创建一个 Speaker，并与当前项目关联。
-5. **支持多个 Speaker**：用户可以保留多个 Speaker 记录（例如不同场合/不同身份），不是强制单例。但默认自动创建的是当前任务的画像。
-6. **命名统一**：代码与文档中不再把 `Speaker` 和 `Persona` 当作两个实体。`Persona` 仅作为描述 Speaker 内部风格属性的概念词，不体现在表名、路由、组件名中。`SpeakerPersona` 等命名逐步收敛到 `Speaker` 或 `SpeakerMemory`。
-7. **保留 `/speakers` 管理页**：用户可以在列表页查看、编辑、删除自己的 Speaker 记录；详情页用于编辑 memory 字段。
-8. **两层分工不变**：Speaker = 稳定的用户风格记忆；Project = 本次主题/意图 + 素材。
-9. **dub 声纹挂 Speaker**：优先级 画像.VOICE_SAMPLE → 本场 AUDIO/VIDEO；`voice_id` 缓存在 Speaker 上，克隆一次跨项目复用。
+**Decision**:
+1. **Speaker = persisted memory**: a user profile extracted from task inputs (prompt + attachments) via M3 analysis, persisted to the `speakers` table after the task completes.
+2. **Per-user isolation**: add `user_id` to the `speakers` table; users can only see and operate their own Speakers.
+3. **Optional selection on home page / project creation**: existing Speakers can be selected in the input box / project creation form, but **not mandatory**. Users may actively choose a historical profile, or choose not to select one.
+4. **Auto-create if not selected**: if the user does not select a Speaker, the system automatically creates one after task analysis completes, and associates it with the current project.
+5. **Support multiple Speakers**: users can retain multiple Speaker records (e.g., different occasions / different identities), not forced to a singleton. But the default auto-created one is the current task's profile.
+6. **Naming unification**: code and documentation no longer treat `Speaker` and `Persona` as two separate entities. `Persona` is only used as a conceptual word describing the internal style attributes of a Speaker, not reflected in table names, routes, or component names. `SpeakerPersona` and similar naming gradually converges to `Speaker` or `SpeakerMemory`.
+7. **Keep `/speakers` management page**: users can view, edit, and delete their own Speaker records on the list page; the detail page is for editing memory fields.
+8. **Two-layer division unchanged**: Speaker = stable user style memory; Project = current theme/intent + materials.
+9. **Dub voiceprint attached to Speaker**: priority is profile.VOICE_SAMPLE → current AUDIO/VIDEO; `voice_id` is cached on the Speaker, cloned once and reused across projects.
 
-**边界（明确不做）**：
-- auth / 多租户 / 团队协作仍然是 auth 之后的事。
-- 不强制用户只能有一个 Speaker；多 Speaker 选择保留到后续产品迭代。
+**Boundaries (explicitly not doing)**:
+- auth / multi-tenancy / team collaboration are still post-auth items.
+- Not forcing users to have only one Speaker; multi-Speaker selection is reserved for subsequent product iterations.
 
-**原因**：
-- 消除 `Speaker`/`Persona` 命名带来的理解成本。
-- 新用户首次使用无需先维护画像，降低门槛。
-- 老用户仍可主动选择或管理历史画像，保留灵活性。
-- dub 声纹有稳定归属、克隆一次复用。
+**Rationale**:
+- Eliminates understanding cost from `Speaker`/`Persona` naming confusion.
+- New users do not need to maintain a profile first, lowering the barrier to entry.
+- Existing users can still actively select or manage historical profiles, preserving flexibility.
+- Dub voiceprint has a stable owner, cloned once and reused.
 
-**相关文件（落地时）**：
-- `apps/api/app/models/tables.py`（加 `user_id`）
-- `apps/api/app/routers/speakers.py`（按用户过滤、可选选择支持）
-- `apps/api/app/routers/projects.py`（`speaker_id` 可选）
-- `apps/api/app/services/generation.py`（未选时自动创建 Speaker）
-- `apps/api/app/routers/clips.py`（dub 读画像声纹 + voice_id 缓存画像）
-- `apps/web/src/routes/index.tsx`、`projects.tsx`（可选 Speaker 选择）
-- `apps/web/src/routes/speakers.tsx`、`speakers.$id.tsx`（按用户隔离的多 Speaker 管理页）
+**Related files (at implementation time)**:
+- `apps/api/app/models/tables.py` (add `user_id`)
+- `apps/api/app/routers/speakers.py` (filter by user, optional selection support)
+- `apps/api/app/routers/projects.py` (`speaker_id` optional)
+- `apps/api/app/services/generation.py` (auto-create Speaker when not selected)
+- `apps/api/app/routers/clips.py` (dub reads profile voiceprint + voice_id cached on profile)
+- `apps/web/src/routes/index.tsx`, `projects.tsx` (optional Speaker selection)
+- `apps/web/src/routes/speakers.tsx`, `speakers.$id.tsx` (per-user isolated multi-Speaker management page)

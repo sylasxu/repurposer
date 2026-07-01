@@ -1,6 +1,4 @@
-import type { Resources } from "./zh"
-
-const en: Resources = {
+const en = {
   common: {
     upload: "Upload",
     googleDrive: "Google Drive",
@@ -134,7 +132,7 @@ const en: Resources = {
     labelSpeaker: "Speaker",
     speakerPlaceholder: "Select a speaker",
     labelLanguage: "Source language",
-    langZh: "中文",
+    langZh: "Chinese",
     langEn: "English",
     emptyTitle: "No projects yet",
     emptyDesc: "Create your first project and turn speech content into LinkedIn posts, quote cards, multi-language summaries, and other knowledge assets.",
@@ -172,11 +170,11 @@ const en: Resources = {
       avoid_words: "Words to avoid",
     },
     tones: {
-      理性: "Rational",
-      激情: "Passionate",
-      温和: "Gentle",
-      犀利: "Sharp",
-      幽默: "Humorous",
+      rational: "Rational",
+      passionate: "Passionate",
+      gentle: "Gentle",
+      sharp: "Sharp",
+      humorous: "Humorous",
     },
     emptyPersona: "No persona yet. Upload materials on the Materials tab, then click generate.",
     pastMaterials: "Past Materials",
@@ -347,9 +345,18 @@ const en: Resources = {
       keyword: "captions",
     },
   },
+  languages: {
+    zh: "Chinese",
+    en: "English",
+    fr: "French",
+    de: "German",
+    es: "Spanish",
+    it: "Italian",
+  },
   a11y: {
     toggleSidebar: "Toggle Sidebar",
   },
 }
 
 export default en
+export type Resources = typeof en

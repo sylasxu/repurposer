@@ -1,206 +1,206 @@
-# 开发排期与路线图
+# Development Schedule & Roadmap
 
-> 基于 P0 内部验证、未来 SaaS 化的目标制定。
+> Based on P0 internal validation and future SaaS goals.
 
 ---
 
-## 一、P0 开发排期（6 周）
+## 1. P0 Development Schedule (6 Weeks)
 
-**P0 目标**：跑通"上传演讲素材 → AI 生成脚本 → 简单渲染 → 人工审校 → 导出"核心闭环。
+**P0 Goal**: Close the core loop: "Upload talk material -> AI generates script -> Simple render -> Human review -> Export".
 
-### Week 1：项目基础与数据层
+### Week 1: Project Foundation & Data Layer
 
-| 天数 | 任务 | 产出 | 负责人 |
+| Days | Task | Deliverable | Owner |
 |:---|:---|:---|:---|
-| Day 1-2 | 项目环境搭建 | `apps/api/` 和 `apps/web/` 可运行，Docker Compose 启动 PostgreSQL | 后端/前端 |
-| Day 2-3 | 数据库 schema 设计 | SQLAlchemy models：`User`、`Speaker`、`Project`、`Asset`、`Clip`、`Derivative`、`WorkflowRun`、`WorkflowStep` | 后端 |
-| Day 3-4 | 文件上传 API | `POST /api/v1/projects/{id}/assets`，本地文件系统存储 | 后端 |
-| Day 4-5 | Speaker/Project CRUD | Speaker 创建、项目创建、列表/详情 API | 后端 |
-| Day 5 | 前端基础页面 | TanStack Start 路由、Speaker 列表页、项目列表页 | 前端 |
+| Day 1-2 | Project environment setup | `apps/api/` and `apps/web/` runnable, Docker Compose launches PostgreSQL | Backend / Frontend |
+| Day 2-3 | Database schema design | SQLAlchemy models: `User`, `Speaker`, `Project`, `Asset`, `Clip`, `Derivative`, `WorkflowRun`, `WorkflowStep` | Backend |
+| Day 3-4 | File upload API | `POST /api/v1/projects/{id}/assets`, local filesystem storage | Backend |
+| Day 4-5 | Speaker / Project CRUD | Speaker creation, project creation, list / detail APIs | Backend |
+| Day 5 | Frontend foundation pages | TanStack Start routing, Speaker list page, Project list page | Frontend |
 
-**Week 1 里程碑**：后端 API 可创建 Speaker 和 Project，前端能展示列表。
+**Week 1 Milestone**: Backend API can create Speakers and Projects; frontend can display lists.
 
-**风险点**：TanStack Start 环境配置可能比预期复杂，预留 1 天缓冲。
+**Risk**: TanStack Start environment setup may be more complex than expected; reserve 1 day buffer.
 
 ---
 
-### Week 2：Speaker 风格画像
+### Week 2: Speaker Style Persona
 
-| 天数 | 任务 | 产出 | 负责人 |
+| Days | Task | Deliverable | Owner |
 |:---|:---|:---|:---|
-| Day 1-2 | MiniMax Client 封装 | `clients/minimax.py`：调用、JSON 解析、重试、错误处理 | 后端 |
-| Day 2-3 | Pydantic schemas | `SpeakerPersona`、`ClipScript`、`StyleReview` 等模型 | 后端 |
-| Day 3-4 | Persona Agent + prompt | 基于过往材料生成风格画像，Jinja2 模板 | 后端 |
-| Day 4-5 | Speaker 材料上传 UI | 文本/PDF 上传、风格画像展示/编辑页 | 前端 |
-| Day 5 | 接口联调 | 前端可调通 persona 生成接口 | 前后端 |
+| Day 1-2 | MiniMax Client wrapper | `clients/minimax.py`: calls, JSON parsing, retry, error handling | Backend |
+| Day 2-3 | Pydantic schemas | `SpeakerPersona`, `ClipScript`, `StyleReview`, etc. | Backend |
+| Day 3-4 | Persona Agent + prompt | Generate style persona from past materials, Jinja2 templates | Backend |
+| Day 4-5 | Speaker material upload UI | Text / PDF upload, style persona display / edit page | Frontend |
+| Day 5 | API integration | Frontend can call persona generation endpoint | Frontend + Backend |
 
-**Week 2 里程碑**：上传过往材料后，系统能生成并展示 Speaker 风格画像。
+**Week 2 Milestone**: After uploading past materials, the system can generate and display a Speaker style persona.
 
-**风险点**：MiniMax M3 输出风格画像的稳定性，需要多轮 prompt 调优。
+**Risk**: Stability of MiniMax M3 persona output; may need multiple rounds of prompt tuning.
 
 ---
 
-### Week 3：内容分析与脚本生成
+### Week 3: Content Analysis & Script Generation
 
-| 天数 | 任务 | 产出 | 负责人 |
+| Days | Task | Deliverable | Owner |
 |:---|:---|:---|:---|
-| Day 1-2 | Analyzer Agent | 演讲稿切片、传播潜力评分 | 后端 |
-| Day 2-4 | Script Agent | 生成竖屏脚本、分镜、字幕、标题 | 后端 |
-| Day 4-5 | Review Agent | 按 Speaker 风格评分，指出问题 | 后端 |
-| Day 5 | 生成触发 API | `POST /api/v1/projects/{id}/generate` 跑通 workflow | 后端 |
+| Day 1-2 | Analyzer Agent | Speech transcript segmentation, virality scoring | Backend |
+| Day 2-4 | Script Agent | Generate vertical clip scripts, storyboards, subtitles, titles | Backend |
+| Day 4-5 | Review Agent | Score against Speaker style, flag issues | Backend |
+| Day 5 | Generation trigger API | `POST /api/v1/projects/{id}/generate` runs the workflow | Backend |
 
-**Week 3 里程碑**：输入文字稿后，系统能生成 3 个 clip 脚本。
+**Week 3 Milestone**: After inputting a transcript, the system can generate 3 clip scripts.
 
-**风险点**：
-- Analyzer 评分标准需要人工校准
-- Script Agent 对中文学术演讲的口语化转换质量
+**Risks**:
+- Analyzer scoring criteria need human calibration
+- Script Agent quality for Chinese academic speech colloquialization
 
 ---
 
-### Week 4：审校与反馈循环
+### Week 4: Review & Feedback Loop
 
-| 天数 | 任务 | 产出 | 负责人 |
+| Days | Task | Deliverable | Owner |
 |:---|:---|:---|:---|
-| Day 1-2 | Reviser Agent | 根据反馈局部重生成 hook/脚本 | 后端 |
-| Day 2-3 | LinkedIn Agent | 生成长帖文案 | 后端 |
-| Day 3-4 | Quote Card Agent | 生成金句卡文案 | 后端 |
-| Day 4-5 | 审校 UI | 左侧 clip 列表 + 右侧预览编辑 + 反馈按钮 | 前端 |
-| Day 5 | 联调 | 前端可编辑脚本、提交反馈、触发重生成 | 前后端 |
+| Day 1-2 | Reviser Agent | Local regeneration of hook / script based on feedback | Backend |
+| Day 2-3 | LinkedIn Agent | Generate long-form post copy | Backend |
+| Day 3-4 | Quote Card Agent | Generate quote card copy | Backend |
+| Day 4-5 | Review UI | Left clip list + right preview / editor + feedback buttons | Frontend |
+| Day 5 | Integration | Frontend can edit scripts, submit feedback, trigger regeneration | Frontend + Backend |
 
-**Week 4 里程碑**：用户能在前端审校 AI 生成的内容，并提交反馈重生成。
+**Week 4 Milestone**: Users can review AI-generated content in the frontend and submit feedback for regeneration.
 
-**风险点**：HITL（人工反馈循环）的状态管理需要设计清晰。
+**Risk**: HITL (human-in-the-loop) feedback loop state management needs clear design.
 
 ---
 
-### Week 5：渲染与导出
+### Week 5: Rendering & Export
 
-| 天数 | 任务 | 产出 | 负责人 |
+| Days | Task | Deliverable | Owner |
 |:---|:---|:---|:---|
-| Day 1-2 | 视频渲染 | MoviePy 图片轮播 + 字幕 + BGM → MP4 | 后端 |
-| Day 2-3 | 金句卡渲染 | HTML/CSS + Puppeteer → PNG | 后端 |
-| Day 3-4 | 导出 API | `POST /api/v1/projects/{id}/export` | 后端 |
-| Day 4-5 | 导出 UI | 前端下载视频、文案、图片 | 前端 |
-| Day 5 | 端到端测试 | 一个完整项目从上传到导出跑通 | 全团队 |
+| Day 1-2 | Video rendering | MoviePy image slideshow + subtitles + BGM -> MP4 | Backend |
+| Day 2-3 | Quote card rendering | HTML/CSS + Puppeteer -> PNG | Backend |
+| Day 3-4 | Export API | `POST /api/v1/projects/{id}/export` | Backend |
+| Day 4-5 | Export UI | Frontend download video, copy, images | Frontend |
+| Day 5 | End-to-end test | One complete project from upload to export | Whole team |
 
-**Week 5 里程碑**：能从上传文字稿到导出视频/文案/金句卡。
+**Week 5 Milestone**: Can go from uploaded transcript to exported video / copy / quote card.
 
-**风险点**：
-- MoviePy 中文字体、字幕样式可能需要调试
-- 视频渲染性能（P0 可接受较慢）
+**Risks**:
+- MoviePy Chinese fonts, subtitle styling may need debugging
+- Video rendering performance (acceptable to be slow in P0)
 
 ---
 
-### Week 6：测试、调优与演示准备
+### Week 6: Testing, Tuning & Demo Prep
 
-| 天数 | 任务 | 产出 | 负责人 |
+| Days | Task | Deliverable | Owner |
 |:---|:---|:---|:---|
-| Day 1-2 | Prompt 调优 | 用 3-5 个真实演讲案例测试，优化输出质量 | 后端 |
-| Day 2-3 | Bug 修复 | 修复联调中发现的问题 | 全团队 |
-| Day 3-4 | Demo 数据准备 | 准备 1-2 个完整演示案例 | 产品/后端 |
-| Day 4-5 | 演示与 P1 规划 | 给左总 demo，整理 P1 需求 | 全团队 |
+| Day 1-2 | Prompt tuning | Test with 3-5 real talk cases, optimize output quality | Backend |
+| Day 2-3 | Bug fixes | Fix issues found during integration | Whole team |
+| Day 3-4 | Demo data prep | Prepare 1-2 complete demo cases | Product / Backend |
+| Day 4-5 | Demo & P1 planning | Demo to Zuo, compile P1 requirements | Whole team |
 
-**Week 6 里程碑**：P0 可演示，P1 需求清单确定。
+**Week 6 Milestone**: P0 demoable, P1 requirement list confirmed.
 
 ---
 
-## 二、P0 关键里程碑
+## 2. P0 Key Milestones
 
-| 时间 | 里程碑 | 验收标准 |
+| Time | Milestone | Acceptance Criteria |
 |:---|:---|:---|
-| Week 1 结束 | 基础环境就绪 | Docker Compose 能启动所有服务，API 和前端可访问 |
-| Week 2 结束 | Persona 生成 | 上传过往材料后能生成可编辑的风格画像 |
-| Week 3 结束 | 脚本生成 | 输入演讲稿能生成 3 个 clip 脚本 |
-| Week 4 结束 | 审校闭环 | 前端可编辑脚本、提交反馈、重生成 |
-| Week 5 结束 | 端到端跑通 | 从上传到导出完整链路可用 |
-| Week 6 结束 | P0 Demo | 给左总演示，确定 P1 方向 |
+| End of Week 1 | Foundation ready | Docker Compose can launch all services, API and frontend accessible |
+| End of Week 2 | Persona generation | After uploading past materials, can generate an editable style persona |
+| End of Week 3 | Script generation | Input transcript can generate 3 clip scripts |
+| End of Week 4 | Review loop closed | Frontend can edit scripts, submit feedback, regenerate |
+| End of Week 5 | End-to-end working | Full upload-to-export pipeline available |
+| End of Week 6 | P0 Demo | Demo to Zuo, confirm P1 direction |
 
 ---
 
-## 三、人员分工建议
+## 3. Suggested Team Roles
 
-| 角色 | 职责 | 大致工作量 |
+| Role | Responsibilities | Approx. Workload |
 |:---|:---|:---|
-| **后端工程师 1** | FastAPI、数据库、MiniMax client、Agent workflow | 主要 |
-| **后端工程师 2 / AI 工程师** | Prompt 工程、Agent 调优、视频渲染 | 主要 |
-| **前端工程师** | TanStack Start 页面、上传组件、审校界面 | 中等 |
-| **产品经理 / 左总** | 需求确认、演示案例、质量验收 | 参与 |
+| **Backend Engineer 1** | FastAPI, database, MiniMax client, Agent workflow | Primary |
+| **Backend Engineer 2 / AI Engineer** | Prompt engineering, Agent tuning, video rendering | Primary |
+| **Frontend Engineer** | TanStack Start pages, upload components, review UI | Medium |
+| **Product Manager / Zuo** | Requirement confirmation, demo cases, quality acceptance | Participating |
 
-**最小团队配置**：2 后端 + 1 前端。
+**Minimum team**: 2 backend + 1 frontend.
 
 ---
 
-## 四、风险与缓冲
+## 4. Risks & Buffers
 
-| 风险 | 影响 | 缓冲措施 |
+| Risk | Impact | Mitigation |
 |:---|:---|:---|
-| TanStack Start 配置复杂 | Week 1 延期 | 若 2 天搞不定，先用 Vite + TanStack Router 简化 |
-| MiniMax M3 输出不稳定 | Week 2-3 延期 | 增加 prompt 调优时间，准备 fallback 到 GPT/Claude |
-| 视频渲染问题多 | Week 5 延期 | P0 可先只出"图片 + 字幕"预览，不强制 MP4 |
-| 前端资源不足 | Week 4-5 延期 | 审校 UI 可先简化，重点保证后端 workflow |
+| TanStack Start setup complexity | Week 1 delay | If not solved in 2 days, fall back to Vite + TanStack Router |
+| MiniMax M3 output instability | Week 2-3 delay | Add prompt tuning time, prepare fallback to GPT/Claude |
+| Video rendering issues | Week 5 delay | P0 can start with "image + subtitle" preview, MP4 not mandatory |
+| Insufficient frontend resources | Week 4-5 delay | Simplify review UI first, prioritize backend workflow |
 
 ---
 
-## 五、P1 规划（6-8 周，目标：产品化准备）
+## 5. P1 Plan (6-8 Weeks, Goal: Productization Prep)
 
-| 模块 | 内容 |
+| Module | Content |
 |:---|:---|
-| 素材扩展 | 视频/音频上传 + 自动转写（FunASR / 讯飞听见） |
-| 幻灯片解析 | PDF/PPT 拆页 + OCR |
-| 声音样本 | 上传声音样本 + 声音克隆 |
-| 多语言 | 中英文翻译 + 通用 TTS 配音 |
-| 视频渲染升级 | 更多字幕样式、B-roll、版式切换 |
-| 品牌套件 | 字幕字体/颜色/logo 模板 |
-| 批量导出 | 打包下载一个项目的所有产出 |
-| 对象存储 | 迁移到 MinIO / 云存储 |
-| 任务队列 | 引入 Celery + Redis |
+| Media expansion | Video / audio upload + auto-transcription (FunASR / iFLYTEK) |
+| Slide parsing | PDF / PPT page splitting + OCR |
+| Voice sample | Upload voice sample + voice cloning |
+| Multilingual | Chinese-English translation + generic TTS dubbing |
+| Video rendering upgrade | More subtitle styles, B-roll, layout switching |
+| Brand kit | Subtitle font / color / logo templates |
+| Batch export | Packaged download of all project outputs |
+| Object storage | Migrate to MinIO / cloud storage |
+| Task queue | Introduce Celery + Redis |
 
 ---
 
-## 六、P2 规划（8-12 周，目标：SaaS 化）
+## 6. P2 Plan (8-12 Weeks, Goal: SaaS)
 
-| 模块 | 内容 |
+| Module | Content |
 |:---|:---|
-| 用户体系 | 注册登录、多用户、权限管理 |
-| 计费系统 | 按项目/按分钟/按生成次数计费 |
-| 多租户 | 团队/组织隔离 |
-| 社媒发布 | 直连 LinkedIn/视频号/抖音/YouTube Shorts |
-| AI B-roll | 根据脚本自动生成/匹配 B-roll |
-| 数据分析 | 播放量、互动率追踪 |
-| 更多平台版式 | X/Twitter、Instagram、小红书专属版式 |
-| API 开放 | 第三方调用接口 |
+| User system | Registration / login, multi-user, permission management |
+| Billing system | Per-project / per-minute / per-generation billing |
+| Multi-tenancy | Team / organization isolation |
+| Social publishing | Direct to LinkedIn / WeChat Channels / Douyin / YouTube Shorts |
+| AI B-roll | Auto-generate / match B-roll from script |
+| Analytics | View count, engagement rate tracking |
+| More platform layouts | X/Twitter, Instagram, Xiaohongshu dedicated layouts |
+| API access | Third-party integration endpoints |
 
 ---
 
-## 七、每日/每周节奏建议
+## 7. Daily / Weekly Rhythm Suggestions
 
-### 每日
+### Daily
 
-- **站会 15 分钟**：昨天做了什么、今天做什么、阻塞点
-- **文档同步**：Agent prompt 调整、API 变更及时更新文档
+- **Standup 15 min**: What did yesterday, what today, blockers
+- **Doc sync**: Agent prompt changes, API changes updated in docs promptly
 
-### 每周
+### Weekly
 
-- **周中检查**：周三下午对齐进度，看是否需要调整优先级
-- **周末 Demo**：每周五下午跑一遍当前功能，录屏或 live demo
-- **周末计划**：周五结束前确定下周任务
+- **Mid-week check**: Wednesday afternoon alignment on progress, adjust priorities if needed
+- **Friday demo**: Friday afternoon run through current features, screen recording or live demo
+- **Weekend planning**: Confirm next week's tasks by end of Friday
 
 ---
 
-## 八、P0 成功标准
+## 8. P0 Success Criteria
 
-| 指标 | 目标 |
+| Metric | Target |
 |:---|:---|
-| 端到端流程 | 1 个真实演讲案例能从上传到导出 |
-| 生成质量 | 用户编辑率 < 50% |
-| 审校时间 | 单个项目人工审校 < 15 分钟 |
-| 演示反馈 | 左总认可方向，明确 P1 优先级 |
+| End-to-end flow | 1 real talk case from upload to export |
+| Generation quality | User edit rate < 50% |
+| Review time | Human review per project < 15 minutes |
+| Demo feedback | Zuo approves direction, clear P1 priorities |
 
 ---
 
-## 九、下一步行动
+## 9. Next Steps
 
-1. 确认排期是否合理
-2. 确认团队人员配置
-3. 准备 1-2 个真实演讲案例作为测试数据
-4. 开始 Week 1 开发
+1. Confirm if the schedule is reasonable
+2. Confirm team staffing
+3. Prepare 1-2 real talk cases as test data
+4. Start Week 1 development
