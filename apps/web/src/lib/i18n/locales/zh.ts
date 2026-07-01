@@ -1,4 +1,6 @@
-const zh = {
+import type { Resources } from "./en"
+
+const zh: Resources = {
   common: {
     upload: "Upload",
     googleDrive: "Google Drive",
@@ -170,11 +172,11 @@ const zh = {
       avoid_words: "避免词汇",
     },
     tones: {
-      理性: "理性",
-      激情: "激情",
-      温和: "温和",
-      犀利: "犀利",
-      幽默: "幽默",
+      rational: "理性",
+      passionate: "激情",
+      gentle: "温和",
+      sharp: "犀利",
+      humorous: "幽默",
     },
     emptyPersona: "还没有 Persona，先在 Materials 页上传材料，然后点击生成。",
     pastMaterials: "Past Materials",
@@ -345,10 +347,17 @@ const zh = {
       keyword: "字幕",
     },
   },
+  languages: {
+    zh: "中文",
+    en: "English",
+    fr: "法语",
+    de: "德语",
+    es: "西班牙语",
+    it: "意大利语",
+  },
   a11y: {
     toggleSidebar: "Toggle Sidebar",
   },
 }
 
 export default zh
-export type Resources = typeof zh
